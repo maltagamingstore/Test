@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeLock — Trading Discipline Tools for NinjaTrader 8</title>
+<meta name="description" content="TradeLock tools enforce your trading rules inside NinjaTrader 8. Discipline lockouts, session analytics, revenge trading detection, and prop firm mode.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --accent: #22d3ee;
+    --accent-dim: rgba(34, 211, 238, 0.15);
+    --accent-glow: rgba(34, 211, 238, 0.3);
+    --red: #ef4444;
+    --green: #22c55e;
+    --orange: #f59e0b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-dim: #475569;
+    --border: #1e293b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 1; }
+  .content { position: relative; z-index: 2; }
+  .grid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px); background-size: 60px 60px; z-index: 0; }
+
+  /* ── Top Navigation ── */
+  .top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10, 14, 23, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+  .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; height: 60px; gap: 2rem; }
+  .nav-brand { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em; white-space: nowrap; }
+  .nav-brand span { color: var(--accent); }
+  .nav-tabs { display: flex; gap: 0.25rem; margin-left: auto; }
+  .nav-tab { padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); text-decoration: none; cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; white-space: nowrap; }
+  .nav-tab:hover { color: var(--text-primary); background: var(--accent-dim); }
+  .nav-tab.active { color: var(--accent); background: var(--accent-dim); border-color: rgba(34,211,238,0.2); }
+  .nav-tab .tab-price { font-size: 0.7rem; font-weight: 700; opacity: 0.7; margin-left: 0.3rem; }
+
+  /* ── Mobile hamburger ── */
+  .nav-hamburger { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; padding: 0.25rem; }
+  @media (max-width: 700px) {
+    .nav-hamburger { display: block; margin-left: auto; }
+    .nav-tabs { display: none; position: absolute; top: 60px; left: 0; right: 0; background: rgba(10, 14, 23, 0.95); backdrop-filter: blur(16px); flex-direction: column; padding: 1rem; gap: 0.25rem; border-bottom: 1px solid var(--border); }
+    .nav-tabs.open { display: flex; }
+  }
+
+  /* ── Product sections ── */
+  .product-page { display: none; }
+  .product-page.active { display: block; }
+
+  /* ── Shared styles ── */
+  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 5rem 2rem 2rem; position: relative; }
+  .hero::after { content: ''; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); filter: blur(100px); pointer-events: none; opacity: 0.4; }
+  .badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent-dim); border: 1px solid rgba(34,211,238,0.2); padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.8rem; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2rem; animation: fadeInDown 0.6s ease-out; }
+  .badge .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  h1 { font-size: clamp(2.5rem, 7vw, 5rem); font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; letter-spacing: -0.03em; animation: fadeInUp 0.8s ease-out; }
+  h1 .highlight { background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-sub { font-size: clamp(1rem, 2.5vw, 1.35rem); color: var(--text-secondary); max-width: 640px; line-height: 1.7; margin-bottom: 2.5rem; animation: fadeInUp 1s ease-out; }
+  .cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; animation: fadeInUp 1.2s ease-out; }
+  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.9rem 2rem; border-radius: 10px; font-weight: 700; font-size: 1rem; text-decoration: none; transition: all 0.25s ease; cursor: pointer; border: none; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: var(--bg-primary); box-shadow: 0 0 30px var(--accent-glow); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px var(--accent-glow); }
+  .btn-secondary { background: transparent; color: var(--text-primary); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem; }
+  h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1.5rem; line-height: 1.15; }
+  .section-text { color: var(--text-secondary); font-size: 1.1rem; line-height: 1.8; max-width: 700px; margin-bottom: 3rem; }
+  .pain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+  .pain-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.8rem; transition: all 0.3s ease; }
+  .pain-card:hover { border-color: var(--red); background: var(--bg-card-hover); transform: translateY(-3px); }
+  .pain-icon { font-size: 1.8rem; margin-bottom: 1rem; }
+  .pain-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .pain-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+  .feature-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; transition: all 0.3s ease; position: relative; overflow: hidden; }
+  .feature-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.3s ease; }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-card:hover { border-color: rgba(34,211,238,0.3); background: var(--bg-card-hover); transform: translateY(-3px); }
+  .feature-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: var(--accent-dim); color: var(--accent); padding: 0.25rem 0.6rem; border-radius: 4px; margin-bottom: 1rem; letter-spacing: 0.05em; }
+  .feature-tag.unique { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+  .feature-tag.smart { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+  .feature-tag.alert { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+  .feature-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.6rem; }
+  .feature-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+  .comparison-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 2rem 0; font-size: 0.9rem; }
+  .comparison-table th { background: var(--bg-card); padding: 1rem 1.2rem; text-align: left; font-weight: 700; border-bottom: 2px solid var(--border); color: var(--text-secondary); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .comparison-table th:last-child { color: var(--accent); }
+  .comparison-table td { padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table td:last-child { color: var(--text-primary); font-weight: 600; }
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); opacity: 0.6; }
+  .pricing-card { background: var(--bg-card); border: 2px solid var(--accent); border-radius: 18px; padding: 3rem; max-width: 500px; margin: 2rem auto; text-align: center; position: relative; box-shadow: 0 0 60px var(--accent-dim); }
+  .pricing-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--bg-primary); font-size: 0.75rem; font-weight: 800; padding: 0.3rem 1.2rem; border-radius: 100px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .price { font-size: 3.5rem; font-weight: 800; margin: 1.5rem 0 0.5rem; letter-spacing: -0.03em; }
+  .price-note { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
+  .pricing-features { list-style: none; text-align: left; margin-bottom: 2rem; }
+  .pricing-features li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 0.95rem; display: flex; align-items: center; gap: 0.7rem; }
+  .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+  .faq-item { border-bottom: 1px solid var(--border); padding: 1.5rem 0; }
+  .faq-item h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+  .faq-item p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+  footer { border-top: 1px solid var(--border); padding: 3rem 2rem; text-align: center; }
+  footer p { color: var(--text-dim); font-size: 0.8rem; line-height: 1.8; max-width: 700px; margin: 0 auto; }
+
+  /* ── Carousel ── */
+  .carousel { position: relative; max-width: 100%; margin: 2rem 0; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); }
+  .carousel-track { display: flex; transition: transform 0.4s ease; }
+  .carousel-slide { min-width: 100%; position: relative; }
+  .carousel-slide img { width: 100%; height: auto; display: block; }
+  .carousel-caption { padding: 1.2rem 1.5rem; border-top: 1px solid var(--border); }
+  .carousel-caption h4 { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.3rem; }
+  .carousel-caption p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+  .carousel-btn { position: absolute; top: 45%; transform: translateY(-50%); background: rgba(10, 14, 23, 0.8); border: 1px solid var(--border); color: var(--text-primary); font-size: 1.5rem; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; z-index: 5; }
+  .carousel-btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .carousel-btn.prev { left: 12px; }
+  .carousel-btn.next { right: 12px; }
+  .carousel-dots { display: flex; justify-content: center; gap: 0.5rem; padding: 1rem 0; }
+  .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: none; cursor: pointer; transition: all 0.2s ease; }
+  .carousel-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+
+  /* ── Screenshots — alternating image/text rows ── */
+  .showcase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; margin: 4rem 0; }
+  .showcase-row.reverse { direction: rtl; }
+  .showcase-row.reverse > * { direction: ltr; }
+  .showcase-img { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-card); transition: all 0.3s ease; }
+  .showcase-img:hover { border-color: rgba(34,211,238,0.3); }
+  .showcase-img img { width: 100%; height: auto; display: block; }
+  .showcase-text h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-primary); }
+  .showcase-text p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; margin-bottom: 1rem; }
+  .showcase-text ul { list-style: none; padding: 0; }
+  .showcase-text ul li { padding: 0.4rem 0; color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.6rem; }
+  .showcase-text ul li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 0.1rem; }
+  /* Panel screenshots — keep natural size, don't stretch */
+  .showcase-panels { display: grid; grid-template-columns: auto auto; gap: 2rem; justify-content: center; align-items: start; margin: 4rem 0; }
+  .showcase-panel-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
+  .showcase-panel-item:hover { border-color: rgba(34,211,238,0.3); }
+  .showcase-panel-item img { display: block; height: auto; max-width: 100%; }
+  .showcase-panel-item .panel-caption { padding: 0.8rem 1rem; }
+  .showcase-panel-item .panel-caption h4 { font-size: 0.85rem; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+  @media (max-width: 800px) {
+    .showcase-row { grid-template-columns: 1fr; gap: 1.5rem; }
+    .showcase-row.reverse { direction: ltr; }
+    .showcase-panels { grid-template-columns: 1fr; }
+  }
+
+  /* ── Dashboard mockup ── */
+  .dashboard-mockup { background: #0d1117; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; max-width: 420px; margin: 2rem auto; line-height: 1.8; }
+  .dashboard-mockup .dm-title { color: var(--accent); font-weight: 700; margin-bottom: 0.5rem; }
+  .dashboard-mockup .dm-sep { color: var(--text-dim); }
+  .dashboard-mockup .dm-green { color: var(--green); }
+  .dashboard-mockup .dm-red { color: var(--red); }
+  .dashboard-mockup .dm-yellow { color: var(--orange); }
+  .dashboard-mockup .dm-dim { color: var(--text-dim); }
+  .dashboard-mockup .dm-white { color: var(--text-primary); }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @media (max-width: 640px) { .section { padding: 4rem 1.5rem; } .pricing-card { padding: 2rem 1.5rem; } .comparison-table { font-size: 0.8rem; } .comparison-table th, .comparison-table td { padding: 0.7rem; } }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ══════════════ TOP NAVIGATION ══════════════ -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand" onclick="switchProduct('tradelockpro');return false;">Trade<span>Lock</span></a>
+    <button class="nav-hamburger" onclick="document.querySelector('.nav-tabs').classList.toggle('open')" aria-label="Menu">☰</button>
+    <div class="nav-tabs">
+      <a class="nav-tab" data-product="tradelockpro" onclick="switchProduct('tradelockpro')">Pro <span class="tab-price">$149</span></a>
+      <a class="nav-tab" data-product="tradelockanalytics" onclick="switchProduct('tradelockanalytics')">Analytics <span class="tab-price">Soon</span></a>
+      <a class="nav-tab" data-product="tradelockpropmode" onclick="switchProduct('tradelockpropmode')">Prop Mode <span class="tab-price">Soon</span></a>
+      <a class="nav-tab" data-product="feedback" onclick="switchProduct('feedback')" style="color: var(--orange);">Feedback</a>
+    </div>
+  </div>
+</nav>
+
+<div class="content">
+
+<!-- ══════════════════════════════════════════════════════════
+     PRODUCT 1: TRADELOCK PRO — $149
+     ══════════════════════════════════════════════════════════ -->
+<div class="product-page" id="page-tradelockpro">
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> NinjaTrader 8 Strategy</div>
+  <h1>Stop Over Trading.<br><span class="highlight">Start Disciplining.</span></h1>
+  <p class="hero-sub">TradeLock Pro enforces your trading rules inside NinjaTrader 8. Time lockouts, consecutive loss cooldowns, session trade limits &mdash; and it <strong>survives restarts</strong>. Your discipline, automated.</p>
+  <div class="cta-group">
+    <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary">Get TradeLock Pro &mdash; $149</a>
+    <a href="#pro-features" class="btn btn-secondary">See Features</a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// The problem</div>
+  <h2>You already know your rules.<br>You just can't follow them.</h2>
+  <p class="section-text">You hit your profit target by 10am. Then you take one more trade. Then another. By noon, a green day turns red. Sound familiar? You're not alone &mdash; overtrading is the #1 account killer in futures.</p>
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="pain-icon">🔥</div>
+      <h3>Revenge Trading</h3>
+      <p>One loss triggers another. Then another. Your $200 loss limit turns into $800 before you blink.</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">⏰</div>
+      <h3>Trading Outside Your Window</h3>
+      <p>You know you're sharpest between 9:30&ndash;11am. But at 2pm, there you are, "just one more."</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">📊</div>
+      <h3>Too Many Trades</h3>
+      <p>Your journal says 3 trades/day is optimal. Your account says you averaged 11 last week.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pro-features">
+  <div class="section-label">// The solution</div>
+  <h2>Rules that enforce themselves.</h2>
+  <p class="section-text">TradeLock Pro runs alongside your normal NinjaTrader workflow. Trade however you want &mdash; Chart Trader, DOM, hotkeys. TradeLock monitors your activity and disables the buttons when you break your own rules.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-tag">CORE</div>
+      <h3>Time-of-Day Lockouts</h3>
+      <p>Define your trading window. Outside those hours, the Chart Trader buttons are disabled. No temptation, no willpower required.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">CORE</div>
+      <h3>Consecutive Loss Cooldowns</h3>
+      <p>Hit 3 losers in a row? TradeLock forces a configurable cooldown period. Come back calm, not tilted.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">CORE</div>
+      <h3>Max Trades Per Session</h3>
+      <p>Set your daily trade limit. Once you hit it, you're done. The platform won't let you enter another position.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag unique">UNIQUE</div>
+      <h3>Restart-Proof Lockouts</h3>
+      <p>Every other discipline tool resets when you restart NinjaTrader. TradeLock writes state to disk. Restarting changes nothing. Your rules persist.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag smart">SMART</div>
+      <h3>Works With Your Existing Setup</h3>
+      <p>TradeLock doesn't replace your buttons or your workflow. It monitors all trades on your account &mdash; Chart Trader, DOM, ATM strategies, hotkeys &mdash; and enforces limits across all of them.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag smart">SMART</div>
+      <h3>Discipline Dashboard</h3>
+      <p>Live on-chart panel showing trades taken, consecutive losses, cooldown status, session P&L, and how many times you've disabled the tool today. No hiding from yourself.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// Why TradeLock</div>
+  <h2>How it stacks up.</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr><th>Feature</th><th>NT8 Built-in</th><th>RiskMaster</th><th>Guardian Angel</th><th>TradeLock Pro</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>P&L-based lockout</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Time-of-day lockouts</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Consecutive loss cooldown</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Max trades per session</td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Survives NT8 restart</td><td>N/A</td><td><span class="cross">✗</span></td><td><span class="check">✓</span>*</td><td><span class="check">✓</span></td></tr>
+      <tr><td>Tracks all order types</td><td>N/A</td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Disable shame counter</td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>No third-party password needed</td><td>N/A</td><td><span class="check">✓</span></td><td><span class="cross">✗</span></td><td><span class="check">✓</span></td></tr>
+      <tr><td>Price</td><td>Free</td><td>Free</td><td>~$300</td><td><strong>$149</strong></td></tr>
+    </tbody>
+  </table>
+  <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 0.5rem;">* Guardian Angel Trader requires a trusted person to hold a password. Users report issues with forgotten passwords causing account lockout problems.</p>
+</section>
+
+<section class="section">
+  <div class="section-label">// See it in action</div>
+  <h2>On a real NinjaTrader 8 chart.</h2>
+
+  <div class="carousel" id="proCarousel">
+    <div class="carousel-track" id="proTrack">
+      <div class="carousel-slide">
+        <img src="img/pro_dashboard.png" alt="TradeLock Pro discipline dashboard showing session stats, trade count, cooldown timer, and active status">
+        <div class="carousel-caption">
+          <h4>Live Discipline Dashboard</h4>
+          <p>On-chart panel showing your trading window, trades taken vs limit, consecutive losses, cooldown timer, session P&L, and current lockout status. Everything at a glance.</p>
+        </div>
+      </div>
+      <div class="carousel-slide">
+        <img src="img/pro_locked.png" alt="TradeLock Pro locked state with disabled Chart Trader buttons after max trades reached">
+        <div class="carousel-caption">
+          <h4>Lockout in Action</h4>
+          <p>Hit your max trades for the session? Chart Trader buttons go dark. No more entries until tomorrow. Status shows exactly why you're locked out &mdash; and it survives restarts.</p>
+        </div>
+      </div>
+      <div class="carousel-slide">
+        <img src="img/pro_settings.png" alt="TradeLock Pro settings showing session times, discipline parameters, and display options">
+        <div class="carousel-caption">
+          <h4>Simple Configuration</h4>
+          <p>Set your trading window, max trades, consecutive loss limit, and cooldown duration. Add to chart and you're done. All parameters configurable from the standard NinjaTrader indicator dialog.</p>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-btn prev" onclick="moveProCarousel(-1)">&#8249;</button>
+    <button class="carousel-btn next" onclick="moveProCarousel(1)">&#8250;</button>
+    <div class="carousel-dots" id="proDots">
+      <button class="carousel-dot active" onclick="goToProSlide(0)"></button>
+      <button class="carousel-dot" onclick="goToProSlide(1)"></button>
+      <button class="carousel-dot" onclick="goToProSlide(2)"></button>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pro-pricing">
+  <div class="section-label">// Get started</div>
+  <h2>One purchase. Lifetime access.</h2>
+  <div class="pricing-card">
+    <div class="pricing-badge">Early Adopter Price</div>
+    <div class="price">$149</div>
+    <p class="price-note">One-time payment &bull; No subscription &bull; Free updates</p>
+    <ul class="pricing-features">
+      <li>Time-of-day trading window lockouts</li>
+      <li>Consecutive loss cooldowns</li>
+      <li>Max trades per session hard stop</li>
+      <li>Restart-proof state persistence</li>
+      <li>Tracks all order types (Chart Trader, DOM, ATM, hotkeys)</li>
+      <li>Live discipline dashboard on chart</li>
+      <li>Disable tracking (shame counter)</li>
+      <li>Alert sounds on lockout events</li>
+      <li>Works with any instrument on NinjaTrader 8</li>
+      <li>Quick-start installation guide</li>
+      <li>Email support from the developer</li>
+      <li>Free updates for life</li>
+    </ul>
+    <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 1.1rem; padding: 1rem;">Buy Now on Gumroad →</a>
+    <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 1rem;">Price increases to $199 after early adopter period ends.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// Built by a trader</div>
+  <h2>I built this for myself first.</h2>
+  <p class="section-text">I spent months coding NinjaTrader strategies, backtesting systems, and searching for an edge. What I found was that the biggest edge wasn't in my indicators &mdash; it was in my discipline. I was overtrading, revenge trading, and breaking my own rules. So I coded something to stop me. It worked. Now I'm sharing it.</p>
+  <p class="section-text">This isn't a tool built by a software company that's never placed a trade. It's built by a futures trader who was tired of being his own worst enemy.</p>
+</section>
+
+<section class="section">
+  <div class="section-label">// FAQ</div>
+  <h2>Common questions.</h2>
+  <div class="faq-item"><h3>What instruments does it work with?</h3><p>TradeLock Pro works with any instrument supported by NinjaTrader 8 &mdash; MES, MNQ, ES, NQ, and all other futures, forex, and equities.</p></div>
+  <div class="faq-item"><h3>Does it work with my existing trading setup?</h3><p>Yes. TradeLock Pro monitors trades at the account level. It works with Chart Trader, the DOM, ATM strategies, hotkey orders &mdash; any way you place trades. It doesn't replace your buttons or change your workflow.</p></div>
+  <div class="faq-item"><h3>Can I bypass the lockout by restarting NinjaTrader?</h3><p>No. TradeLock writes your session state to disk. When NinjaTrader restarts, it reads the file and re-applies all active lockouts for the current session.</p></div>
+  <div class="faq-item"><h3>What if I disable the strategy?</h3><p>You can disable it &mdash; we can't stop that. But TradeLock tracks how many times you disable it each day and shows the count on the dashboard. You can't hide from your own behavior.</p></div>
+  <div class="faq-item"><h3>Does it work with sim accounts?</h3><p>Yes. We recommend testing all your rules in sim mode first before going live.</p></div>
+  <div class="faq-item"><h3>What version of NinjaTrader is required?</h3><p>NinjaTrader 8.1.3.1 (64-bit) or higher.</p></div>
+  <div class="faq-item"><h3>Do I get updates?</h3><p>Yes. All future updates are included free. Feature requests welcome &mdash; the roadmap is driven by what traders actually need.</p></div>
+  <div class="faq-item"><h3>What's coming in future versions?</h3><p>Win-then-give-back protection (trailing stop on your daily P&L), daily loss limit lockouts, volatility filters, news event lockouts, and a discipline statistics dashboard. All included free for existing customers.</p></div>
+</section>
+
+<section class="section" style="text-align: center; padding-bottom: 8rem;">
+  <h2>Your next blown account costs<br>more than $149.</h2>
+  <p class="section-text" style="margin: 1.5rem auto 2.5rem;">One revenge trade can wipe out a week of profits. TradeLock Pro pays for itself the first time it stops you from making a trade you'd regret.</p>
+  <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;">Get TradeLock Pro &mdash; $149</a>
+</section>
+
+</div><!-- end page-tradelockpro -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PRODUCT 2: TRADELOCK ANALYTICS — $49
+     ══════════════════════════════════════════════════════════ -->
+<div class="product-page" id="page-tradelockanalytics">
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> Coming Soon</div>
+  <h1>Your chart shows price.<br><span class="highlight">This shows you.</span></h1>
+  <p class="hero-sub">TradeLock Analytics puts real-time trade P&L, R:R, session stats, and revenge trading detection directly on your chart. See your discipline breaking down <strong>before</strong> it costs you money.</p>
+  <div class="cta-group">
+    <a href="#analytics-features" class="btn btn-secondary">See Features</a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// The problem</div>
+  <h2>You find out you're tilting<br>after the damage is done.</h2>
+  <p class="section-text">Trading journals are great &mdash; for reviewing yesterday's mistakes. But by the time you open your journal, the revenge trades already happened. You need awareness in real-time, on the chart, while you're trading.</p>
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="pain-icon">🎰</div>
+      <h3>Revenge Trading</h3>
+      <p>45 seconds after a loss, you're already in another trade. No plan, no edge &mdash; just emotion. You don't even notice the pattern until the session is over.</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">📉</div>
+      <h3>Hidden Drawdown</h3>
+      <p>You were up $400 at 10am. By noon you're at $50. You don't realize you gave back $350 because you never tracked the peak.</p>
+    </div>
+    <div class="pain-card">
+      <div class="pain-icon">🔢</div>
+      <h3>No Live Stats</h3>
+      <p>NinjaTrader's Trade Performance window is buried in menus. You want win rate, streak count, and profit factor visible while you trade &mdash; not after.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="analytics-features">
+  <div class="section-label">// Two panels, one glance</div>
+  <h2>Active trade P&L + session behavioral stats.</h2>
+  <p class="section-text">TradeLock Analytics runs as an indicator on any chart. It auto-detects your account and shows two live panels &mdash; one for your current position, one for your session performance.</p>
+
+  <!-- Screenshot 1: Multi-ATM — image left, text right -->
+  <div class="showcase-row">
+    <div class="showcase-img">
+      <img src="img/multi_atm.png" alt="TradeLock Analytics showing per-order P&L labels on a multi-target ATM strategy">
+    </div>
+    <div class="showcase-text">
+      <h3>Per-Order P&L Labels</h3>
+      <p>Dollar amount, R-value, points, and ticks rendered directly at each stop and target price level on your chart. Works with multi-target ATM strategies out of the box.</p>
+      <ul>
+        <li>See exact dollar risk and reward at each order level</li>
+        <li>R-value displayed per order when risk is configured</li>
+        <li>Updates automatically when you drag orders</li>
+        <li>Aggregates split ATM orders at the same price</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Screenshot 2: Panels — natural size, centered -->
+  <div class="showcase-panels">
+    <div class="showcase-panel-item">
+      <div class="panel-caption"><h4>Active Trade Panel</h4></div>
+      <img src="img/active_trade.png" alt="TradeLock Analytics active trade panel">
+    </div>
+    <div class="showcase-panel-item">
+      <div class="panel-caption"><h4>Session Stats Panel</h4></div>
+      <img src="img/session_stats.png" alt="TradeLock Analytics session stats panel">
+    </div>
+  </div>
+
+  <!-- Screenshot 3: Recovery Line — image right, text left -->
+  <div class="showcase-row reverse">
+    <div class="showcase-img">
+      <img src="img/recovery_line.png" alt="TradeLock Analytics recovery line showing session break-even price">
+    </div>
+    <div class="showcase-text">
+      <h3>Recovery Line — Only in TradeLock</h3>
+      <p>When you're down on the session, a blue dashed line appears showing the exact price where your current trade erases all session losses and brings you back to zero.</p>
+      <ul>
+        <li>Answers "how far does this trade need to run to save my day?"</li>
+        <li>Automatically calculated from session P&L and position size</li>
+        <li>Disappears when session P&L is positive</li>
+        <li>No other NinjaTrader indicator does this</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-tag">LIVE</div>
+      <h3>Per-Order P&L Labels</h3>
+      <p>Dollar amount, points, ticks, and R-value rendered directly at each stop and target price level on your chart. Not in a side panel &mdash; right on the price bars where you're looking.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">LIVE</div>
+      <h3>Real-Time R:R Display</h3>
+      <p>See your risk-to-reward ratio calculated from entry, stop, and target. Updates when you drag orders. Fixed math, no guessing.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag unique">UNIQUE</div>
+      <h3>Recovery Line</h3>
+      <p>When you're down on the session, a horizontal line shows exactly where your current trade needs to reach to erase all session losses and bring you back to zero. Nobody else has this.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag alert">ALERT</div>
+      <h3>Revenge Trading Timer</h3>
+      <p>Live countdown showing time since your last trade. Turns yellow under 2 minutes, red under 1 minute after a loss. Audio alert when you re-enter too fast. Catch yourself before the damage.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag alert">ALERT</div>
+      <h3>Loss Streak Warnings</h3>
+      <p>Consecutive loss counter with escalating visual and audio alerts. At 3 losses in a row, the panel goes red and sounds an alarm. Configurable threshold.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag smart">SMART</div>
+      <h3>Drawdown from Session Peak</h3>
+      <p>Tracks your highest P&L today and shows how far you've fallen from it. Prop traders: this is your trailing drawdown awareness, right on the chart.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag smart">SMART</div>
+      <h3>Session Stats Dashboard</h3>
+      <p>Trade count, win rate, profit factor, average winner/loser, R-multiple tracking &mdash; all live, all on-chart. No need to open separate windows or external journals.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">CORE</div>
+      <h3>Zero Configuration Start</h3>
+      <p>Add to chart, done. Auto-detects your active account. Works with any instrument, any timeframe, any order method. Single .cs file, no dependencies.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// What you get</div>
+  <h2>Everything in one indicator.</h2>
+  <p class="section-text">TradeLock Analytics extends your NinjaTrader 8 workflow with on-chart analytics designed for discipline-focused traders.</p>
+  <div class="pain-grid">
+    <div class="pain-card" style="border-color: var(--border);">
+      <div class="pain-icon">📊</div>
+      <h3>Active Trade Analytics</h3>
+      <p>Per-order P&L labels in dollars, R-value, points, and ticks directly at each price level. R:R ratio, stop &amp; target distance, trade duration — all on-chart, all live.</p>
+    </div>
+    <div class="pain-card" style="border-color: var(--border);">
+      <div class="pain-icon">📈</div>
+      <h3>Session Performance</h3>
+      <p>Trade count, win rate, profit factor, average winner/loser, R-multiple tracking, and drawdown from session peak — updated after every trade close.</p>
+    </div>
+    <div class="pain-card" style="border-color: var(--border);">
+      <div class="pain-icon">🛡️</div>
+      <h3>Behavioral Awareness</h3>
+      <p>Revenge trading timer, consecutive loss streak warnings with audio alerts, and the recovery line showing where your current trade erases session losses.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="analytics-pricing">
+  <div class="section-label">// Pricing</div>
+  <h2>Launching soon at $49.</h2>
+  <div class="pricing-card">
+    <div class="pricing-badge">Coming Soon</div>
+    <div class="price">$49</div>
+    <p class="price-note">One-time payment &bull; No subscription &bull; Free updates</p>
+    <ul class="pricing-features">
+      <li>Per-order P&L labels on chart (dollars, points, ticks, R-value)</li>
+      <li>Real-time R:R ratio display</li>
+      <li>Active trade panel (direction, quantity, entry, duration, unrealized P&L)</li>
+      <li>Session stats panel (win rate, profit factor, avg winner/loser)</li>
+      <li>Win/loss streak counter with visual escalation</li>
+      <li>Revenge trading timer with audio alerts</li>
+      <li>Drawdown from session peak tracking</li>
+      <li>Recovery line (session break-even price)</li>
+      <li>R-multiple tracking across session</li>
+      <li>Configurable behavioral thresholds</li>
+      <li>Works with any instrument on NinjaTrader 8</li>
+      <li>Email support from the developer</li>
+      <li>Free updates for life</li>
+    </ul>
+    <p style="color: var(--accent); font-weight: 700; font-size: 1rem; margin-top: 1rem;">Available when TradeLock launches on the NinjaTrader Ecosystem.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">// FAQ</div>
+  <h2>Common questions.</h2>
+  <div class="faq-item"><h3>Is this an indicator or a strategy?</h3><p>Indicator. It runs on any chart, doesn't place or manage orders, and doesn't affect your trading. It's display and alerts only.</p></div>
+  <div class="faq-item"><h3>Does it work with ATM strategies?</h3><p>Yes. It reads your active orders (stops and targets) regardless of how they were placed &mdash; ATM, manual, hotkeys, DOM.</p></div>
+  <div class="faq-item"><h3>What's the recovery line?</h3><p>When your session P&L is negative, the recovery line shows the exact price where your current trade would need to exit to erase all session losses and bring you back to break-even on the day.</p></div>
+  <div class="faq-item"><h3>Does it replace my trading journal?</h3><p>No. It supplements your journal with real-time awareness while you trade. Journals analyze after the session. TradeLock Analytics warns you during the session before bad decisions happen.</p></div>
+  <div class="faq-item"><h3>Does it work with TradeLock Pro?</h3><p>Yes. They run independently on the same chart. Pro enforces rules and disables buttons. Analytics shows you stats and warns you. Different tools, complementary purposes.</p></div>
+  <div class="faq-item"><h3>What instruments does it work with?</h3><p>Any instrument on NinjaTrader 8 &mdash; futures, forex, equities. It auto-detects the instrument's tick size and point value.</p></div>
+  <div class="faq-item"><h3>Do I get updates?</h3><p>Yes. All future updates are free. Planned: dynamic break-even on partial scale-outs, CSV export, multi-day rolling stats.</p></div>
+</section>
+
+<section class="section" style="text-align: center; padding-bottom: 8rem;">
+  <h2>You can't fix what you<br>can't see happening.</h2>
+  <p class="section-text" style="margin: 1.5rem auto 2.5rem;">Every revenge trade, every tilt spiral, every session drawdown &mdash; they all have warning signs. TradeLock Analytics makes those signs impossible to ignore. Coming soon to the NinjaTrader Ecosystem.</p>
+  <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;">Get TradeLock Pro Now &mdash; $149</a>
+</section>
+
+</div><!-- end page-tradelockanalytics -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PRODUCT 3: TRADELOCK PROP MODE — $199 (Coming Soon)
+     ══════════════════════════════════════════════════════════ -->
+<div class="product-page" id="page-tradelockpropmode">
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> Coming Soon</div>
+  <h1>Prop firm rules.<br><span class="highlight">Auto-enforced.</span></h1>
+  <p class="hero-sub">TradeLock Prop Mode loads your firm's exact rules &mdash; trailing drawdown, daily loss limit, consistency thresholds &mdash; and enforces them in real-time. One blown rule won't blow your funded account.</p>
+  <div class="cta-group">
+    <a href="#propmode-features" class="btn btn-secondary">See Planned Features</a>
+  </div>
+</section>
+
+<section class="section" id="propmode-features">
+  <div class="section-label">// The problem</div>
+  <h2>Manual rule tracking<br>is a recipe for disaster.</h2>
+  <p class="section-text">You're watching charts, managing positions, reading price action &mdash; and simultaneously trying to remember whether your trailing drawdown is intraday or end-of-day. Whether you've hit 80% of your daily loss limit. Whether you're within your consistency threshold. One mistake and the account is gone.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-tag">PLANNED</div>
+      <h3>Prop Firm Presets</h3>
+      <p>Pre-configured rules for top prop firms. Select your firm and account size &mdash; drawdown type, daily loss limit, profit target, and contract caps all load automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">PLANNED</div>
+      <h3>Trailing Drawdown Display</h3>
+      <p>Real-time on-chart tracking of your trailing drawdown level &mdash; whether it's intraday or end-of-day. Always know exactly how close you are to liquidation.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">PLANNED</div>
+      <h3>Daily Loss Limit Lockout</h3>
+      <p>Automatic position flattening and button disabling when you approach your daily loss limit. Configurable warning zone before hard lockout.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-tag">PLANNED</div>
+      <h3>P&L-Based Enforcement</h3>
+      <p>All lockouts driven by actual P&L tracking. Combines the discipline enforcement of TradeLock Pro with prop-firm-specific rule awareness.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="text-align: center; padding-bottom: 8rem;">
+  <h2>Launching soon at $199.</h2>
+  <p class="section-text" style="margin: 1.5rem auto 2.5rem;">TradeLock Prop Mode is in active development. Get TradeLock Pro or Analytics today and be the first to know when Prop Mode launches.</p>
+  <div class="cta-group">
+    <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary">Get TradeLock Pro &mdash; $149</a>
+    <a href="https://maltagamer.gumroad.com/l/tradelockanalytics" class="btn btn-secondary">Get TradeLock Analytics &mdash; $49</a>
+  </div>
+</section>
+
+</div><!-- end page-tradelockpropmode -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     FEEDBACK PAGE
+     ══════════════════════════════════════════════════════════ -->
+<div class="product-page" id="page-feedback">
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> Your Voice Matters</div>
+  <h1>Help shape<br><span class="highlight">TradeLock.</span></h1>
+  <p class="hero-sub">Every feature request is reviewed. Every suggestion is considered for future updates. TradeLock is built by a trader, for traders &mdash; your input drives what gets built next.</p>
+</section>
+
+<section class="section" style="padding-top: 2rem;">
+  <div style="max-width: 700px; margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--bg-card);">
+    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScbtt-NszLo5AAS2yvn_zMUhIBOo90Z_Ri5BKDSM5A6iKQGag/viewform?embedded=true" width="100%" height="700" frameborder="0" marginheight="0" marginwidth="0" style="display: block;">Loading…</iframe>
+  </div>
+</section>
+
+<section class="section" style="text-align: center; padding-bottom: 8rem;">
+  <h2>Want to try TradeLock first?</h2>
+  <p class="section-text" style="margin: 1.5rem auto 2.5rem;">Get TradeLock Pro today and start enforcing your trading rules. Your feedback as a user carries even more weight.</p>
+  <a href="https://tradelockpro.gumroad.com/l/frkzrt" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;">Get TradeLock Pro &mdash; $149</a>
+</section>
+
+</div><!-- end page-feedback -->
+
+
+<!-- ══════════════ SHARED FOOTER ══════════════ -->
+<footer>
+  <p>TradeLock is an independent product line and is not affiliated with, endorsed by, or connected to NinjaTrader Group, LLC. NinjaTrader&reg; is a registered trademark of NinjaTrader Group, LLC.<br><br><strong>Risk Disclosure:</strong> Futures trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. TradeLock products are discipline and analytics tools and do not provide trading signals, recommendations, or financial advice. Past performance is not indicative of future results.<br><br>&copy; 2026 TradeLock. All rights reserved.</p>
+</footer>
+
+</div><!-- end content -->
+
+<script>
+  // ── URL-based product routing ──
+  const products = ['tradelockpro', 'tradelockanalytics', 'tradelockpropmode', 'feedback'];
+
+  function switchProduct(id) {
+    // Close mobile menu if open
+    document.querySelector('.nav-tabs').classList.remove('open');
+
+    // Hide all product pages
+    document.querySelectorAll('.product-page').forEach(p => p.classList.remove('active'));
+
+    // Show selected
+    const page = document.getElementById('page-' + id);
+    if (page) page.classList.add('active');
+
+    // Update tab highlights
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.product === id);
+    });
+
+    // Update URL without reload
+    const path = id === 'tradelockpro' ? '/' : '/' + id;
+    history.pushState({ product: id }, '', path);
+
+    // Update page title
+    const titles = {
+      tradelockpro: 'TradeLock Pro — Trading Discipline Tool for NinjaTrader 8',
+      tradelockanalytics: 'TradeLock Analytics — On-Chart Trade Stats & Revenge Detection for NinjaTrader 8',
+      tradelockpropmode: 'TradeLock Prop Mode — Prop Firm Rule Enforcement for NinjaTrader 8',
+      feedback: 'TradeLock — Feedback & Feature Requests'
+    };
+    document.title = titles[id] || titles.tradelockpro;
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  // ── Read URL on page load ──
+  function getProductFromPath() {
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+    if (products.includes(path)) return path;
+    return 'tradelockpro'; // default
+  }
+
+  // ── Handle browser back/forward ──
+  window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.product) {
+      switchProduct(e.state.product);
+    } else {
+      switchProduct(getProductFromPath());
+    }
+  });
+
+  // ── Pro Carousel ──
+  let proSlideIndex = 0;
+  const proSlideCount = 3;
+
+  function updateProCarousel() {
+    document.getElementById('proTrack').style.transform = 'translateX(-' + (proSlideIndex * 100) + '%)';
+    document.querySelectorAll('#proDots .carousel-dot').forEach(function(dot, i) {
+      dot.classList.toggle('active', i === proSlideIndex);
+    });
+  }
+
+  function moveProCarousel(dir) {
+    proSlideIndex = (proSlideIndex + dir + proSlideCount) % proSlideCount;
+    updateProCarousel();
+  }
+
+  function goToProSlide(i) {
+    proSlideIndex = i;
+    updateProCarousel();
+  }
+
+  // ── Init on load ──
+  switchProduct(getProductFromPath());
+</script>
+</body>
+</html>

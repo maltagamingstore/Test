@@ -177,6 +177,7 @@
       <a class="nav-tab" data-product="tradelockpro" onclick="switchProduct('tradelockpro')">Pro <span class="tab-price">$149</span></a>
       <a class="nav-tab" data-product="tradelockanalytics" onclick="switchProduct('tradelockanalytics')">Analytics <span class="tab-price">$49</span></a>
       <a class="nav-tab" data-product="tradelockpropmode" onclick="switchProduct('tradelockpropmode')">Prop Mode <span class="tab-price">Soon</span></a>
+      <a class="nav-tab" data-product="freeindicators" onclick="switchProduct('freeindicators')">Free Indicators <span class="tab-price" style="color: var(--green);">Free</span></a>
       <a class="nav-tab" data-product="feedback" onclick="switchProduct('feedback')" style="color: var(--orange);">Feedback</a>
     </div>
   </div>
@@ -686,6 +687,45 @@
 
 
 <!-- ══════════════════════════════════════════════════════════
+     FREE INDICATORS LIBRARY
+     ══════════════════════════════════════════════════════════ -->
+<div class="product-page" id="page-freeindicators">
+
+<section class="hero">
+  <div class="badge"><span class="dot"></span> Free for NinjaTrader 8</div>
+  <h1>Free Indicators<br><span class="highlight">Library.</span></h1>
+  <p class="hero-sub">A growing collection of small, focused quality-of-life indicators for NinjaTrader 8 &mdash; built while developing TradeLock and released free to the community.</p>
+</section>
+
+<section class="section" style="padding-top: 2rem;">
+  <div class="section-label">// Available now</div>
+  <h2>Quality-of-life tools,<br><span style="background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">on the house.</span></h2>
+
+  <div class="feature-grid" style="margin-top: 3rem;">
+    <div class="feature-card" style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+        <img src="img/position_timer_icon.svg" alt="Position Timer icon" style="width: 56px; height: 56px; flex-shrink: 0;">
+        <div>
+          <div class="feature-tag smart">FREE</div>
+          <h3 style="margin: 0.25rem 0 0;">Position Timer</h3>
+        </div>
+      </div>
+      <img src="img/position_timer_preview.png" alt="Position Timer preview on NinjaTrader 8 chart" style="width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 1.25rem; display: block;">
+      <p>Know exactly how long you've been in every trade. Position Timer displays a live clock for each open position &mdash; contracts, direction, and elapsed time &mdash; directly on your NinjaTrader 8 chart.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="text-align: center; padding-bottom: 8rem;">
+  <h2>More free indicators coming soon.</h2>
+  <p class="section-text" style="margin: 1.5rem auto 2.5rem;">Have an idea for a small quality-of-life tool? Drop it in the feedback form &mdash; the best requests get built and released free.</p>
+  <a href="/feedback" onclick="switchProduct('feedback');return false;" class="btn btn-secondary">Request an Indicator</a>
+</section>
+
+</div><!-- end page-freeindicators -->
+
+
+<!-- ══════════════════════════════════════════════════════════
      FEEDBACK PAGE
      ══════════════════════════════════════════════════════════ -->
 <div class="product-page" id="page-feedback">
@@ -735,7 +775,7 @@
 
 <script>
   // ── URL-based product routing ──
-  const products = ['tradelockpro', 'tradelockanalytics', 'tradelockpropmode', 'feedback'];
+  const products = ['tradelockpro', 'tradelockanalytics', 'tradelockpropmode', 'freeindicators', 'feedback'];
 
   function switchProduct(id) {
     // Close mobile menu if open
@@ -762,6 +802,7 @@
       tradelockpro: 'TradeLock Pro — Trading Discipline Tool for NinjaTrader 8',
       tradelockanalytics: 'TradeLock Analytics — On-Chart Trade Stats & Revenge Detection for NinjaTrader 8',
       tradelockpropmode: 'TradeLock Prop Mode — Prop Firm Rule Enforcement for NinjaTrader 8',
+      freeindicators: 'TradeLock Free Indicators — Quality-of-Life Tools for NinjaTrader 8',
       feedback: 'TradeLock — Feedback & Feature Requests'
     };
     document.title = titles[id] || titles.tradelockpro;

@@ -91,9 +91,9 @@
   /* ── Free indicator card (icon + preview + copy) ── */
   .free-indicator-card { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
   .free-indicator-card .fi-images { display: flex; gap: 0; flex: 0 1 500px; max-width: 100%; }
-  .free-indicator-card .fi-images img { width: 50%; aspect-ratio: 1 / 1; height: auto; display: block; object-fit: cover; border: 1px solid var(--border); }
-  .free-indicator-card .fi-images img:first-child { border-radius: 10px 0 0 10px; border-right: none; }
-  .free-indicator-card .fi-images img:last-child { border-radius: 0 10px 10px 0; }
+  .free-indicator-card .fi-images img { width: 50%; aspect-ratio: 1 / 1; height: auto; display: block; border: 1px solid var(--border); background: var(--bg-primary); }
+  .free-indicator-card .fi-images img:first-child { border-radius: 10px 0 0 10px; border-right: none; object-fit: cover; }
+  .free-indicator-card .fi-images img:last-child { border-radius: 0 10px 10px 0; object-fit: contain; padding: 0.5rem; }
   .free-indicator-card .fi-copy { flex: 1 1 260px; min-width: 0; }
   .free-indicator-card .fi-copy h3 { margin: 0.5rem 0 0.75rem; }
   .free-indicator-card .fi-copy p { margin: 0; }

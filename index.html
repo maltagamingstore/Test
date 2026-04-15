@@ -177,7 +177,14 @@
   @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   @media (max-width: 640px) { .section { padding: 4rem 1.5rem; } .pricing-card { padding: 2rem 1.5rem; } .comparison-table { font-size: 0.8rem; } .comparison-table th, .comparison-table td { padding: 0.7rem; } }
-  @media (max-width: 820px) { .desktop-only { display: none !important; } }
+  .mobile-only { display: none; }
+  @media (max-width: 820px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block !important; }
+  }
+  /* Top-right-cropped carousel (mobile variant) */
+  .carousel-cropped .carousel-slide { overflow: hidden; }
+  .carousel-cropped .carousel-slide img { transform: scale(2); transform-origin: top right; }
 </style>
 </head>
 <body>
@@ -299,7 +306,7 @@
   <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 0.5rem;">* Guardian Angel Trader requires a trusted person to hold a password. Users report issues with forgotten passwords causing account lockout problems.</p>
 </section>
 
-<section class="section">
+<section class="section desktop-only">
   <div class="section-label">// See it in action</div>
   <h2>On a real NinjaTrader 8 chart.</h2>
 
@@ -333,6 +340,44 @@
       <button class="carousel-dot active" onclick="goToProSlide(0)"></button>
       <button class="carousel-dot" onclick="goToProSlide(1)"></button>
       <button class="carousel-dot" onclick="goToProSlide(2)"></button>
+    </div>
+  </div>
+</section>
+
+<section class="section mobile-only">
+  <div class="section-label">// See it in action</div>
+  <h2>On a real NinjaTrader 8 chart.</h2>
+
+  <div class="carousel carousel-cropped" id="proCarouselMobile">
+    <div class="carousel-track" id="proTrackMobile">
+      <div class="carousel-slide">
+        <img src="img/pro_dashboard.png" alt="TradeLock Pro discipline dashboard showing session stats, trade count, cooldown timer, and active status">
+        <div class="carousel-caption">
+          <h4>Live Discipline Dashboard</h4>
+          <p>On-chart panel showing your trading window, trades taken vs limit, consecutive losses, cooldown timer, session P&L, and current lockout status. Everything at a glance.</p>
+        </div>
+      </div>
+      <div class="carousel-slide">
+        <img src="img/pro_locked.png" alt="TradeLock Pro locked state with disabled Chart Trader buttons after max trades reached">
+        <div class="carousel-caption">
+          <h4>Lockout in Action</h4>
+          <p>Hit your max trades for the session? Chart Trader buttons go dark. No more entries until tomorrow. Status shows exactly why you're locked out &mdash; and it survives restarts.</p>
+        </div>
+      </div>
+      <div class="carousel-slide">
+        <img src="img/pro_settings.png" alt="TradeLock Pro settings showing session times, discipline parameters, and display options">
+        <div class="carousel-caption">
+          <h4>Simple Configuration</h4>
+          <p>Set your trading window, max trades, consecutive loss limit, and cooldown duration. Add to chart and you're done. All parameters configurable from the standard NinjaTrader indicator dialog.</p>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-btn prev" onclick="moveProCarouselMobile(-1)">&#8249;</button>
+    <button class="carousel-btn next" onclick="moveProCarouselMobile(1)">&#8250;</button>
+    <div class="carousel-dots" id="proDotsMobile">
+      <button class="carousel-dot active" onclick="goToProSlideMobile(0)"></button>
+      <button class="carousel-dot" onclick="goToProSlideMobile(1)"></button>
+      <button class="carousel-dot" onclick="goToProSlideMobile(2)"></button>
     </div>
   </div>
 </section>
@@ -864,6 +909,27 @@
   function goToProSlide(i) {
     proSlideIndex = i;
     updateProCarousel();
+  }
+
+  // ── Pro Carousel (mobile, top-right cropped) ──
+  let proSlideIndexMobile = 0;
+
+  function updateProCarouselMobile() {
+    var track = document.getElementById('proTrackMobile');
+    if (track) track.style.transform = 'translateX(-' + (proSlideIndexMobile * 100) + '%)';
+    document.querySelectorAll('#proDotsMobile .carousel-dot').forEach(function(dot, i) {
+      dot.classList.toggle('active', i === proSlideIndexMobile);
+    });
+  }
+
+  function moveProCarouselMobile(dir) {
+    proSlideIndexMobile = (proSlideIndexMobile + dir + proSlideCount) % proSlideCount;
+    updateProCarouselMobile();
+  }
+
+  function goToProSlideMobile(i) {
+    proSlideIndexMobile = i;
+    updateProCarouselMobile();
   }
 
   // ── Init on load ──

@@ -182,9 +182,10 @@
     .desktop-only { display: none !important; }
     .mobile-only { display: block !important; }
   }
-  /* Top-right-cropped carousel (mobile variant) */
+  /* Cropped carousel (mobile variant) */
   .carousel-cropped .carousel-slide { overflow: hidden; }
-  .carousel-cropped .carousel-slide img { transform: scale(2); transform-origin: top right; }
+  .carousel-cropped .carousel-slide img { transform: scale(3); transform-origin: top right; }
+  .carousel-cropped .carousel-slide:nth-child(3) img { transform: scale(2); transform-origin: center center; }
 </style>
 </head>
 <body>

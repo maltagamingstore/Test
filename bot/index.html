@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>mm_bot · status</title>
+<style>
+  :root{
+    --bg:#0c141c; --card:#141f2b; --card2:#0f1925; --ink:#dce7f0; --muted:#8098ab;
+    --line:#243645; --accent:#3ec2f0;
+    --good:#35d39a; --good-bg:#0e2a24; --warn:#f0b54a; --warn-bg:#2b2411;
+    --bad:#f4708e; --bad-bg:#2c1520;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;padding:16px 14px 40px;max-width:560px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .top h1{font-size:15px;margin:0;font-family:var(--mono);letter-spacing:.02em;font-weight:600;color:var(--muted)}
+  .badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:7px;letter-spacing:.04em}
+  .badge .dot{width:8px;height:8px;border-radius:50%}
+  .up{background:var(--good-bg);color:var(--good)} .up .dot{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .down{background:var(--bad-bg);color:var(--bad)} .down .dot{background:var(--bad)}
+  .fresh{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 14px;display:flex;gap:8px;align-items:center}
+  .stale{color:var(--warn)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+  .card.wide{grid-column:1 / -1}
+  .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .big{font-size:26px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:5px}
+  .pill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block}
+  .pill.g{background:var(--good-bg);color:var(--good)} .pill.w{background:var(--warn-bg);color:var(--warn)}
+  .pill.b{background:var(--bad-bg);color:var(--bad)} .pill.n{background:#1b2938;color:var(--muted)}
+
+  .rowline{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:13px;
+    padding:5px 0;border-bottom:1px solid var(--card2)}
+  .rowline:last-child{border-bottom:none}
+  .rowline .k{color:var(--muted)} .rowline .v{font-weight:700;font-variant-numeric:tabular-nums}
+
+  .bar{height:9px;border-radius:5px;background:#1b2938;overflow:hidden;display:flex;margin-top:8px}
+  .bar i{display:block;height:100%}
+  .seg-up{background:var(--good)} .seg-cd{background:var(--accent)} .seg-one{background:var(--warn)} .seg-rot{background:var(--bad)}
+  .legend{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  .cmp{display:flex;gap:10px}
+  .cmp .col{flex:1;text-align:center;padding:10px;border-radius:11px;background:var(--card2)}
+  .cmp .col .t{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .cmp .col .n{font-size:20px;font-weight:750;margin-top:4px;font-variant-numeric:tabular-nums}
+  .win{outline:1px solid var(--good)}
+  .note{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:9px;text-align:center}
+  .err{font-family:var(--mono);font-size:12px;color:var(--warn);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>mm_bot · status</h1>
+    <span id="health" class="badge down"><span class="dot"></span>…</span>
+  </div>
+  <div id="fresh" class="fresh">connecting…</div>
+  <div id="root"></div>
+
+<script>
+const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
+const $=id=>document.getElementById(id);
+const nn=(v,d="—")=>(v===null||v===undefined)?d:v;
+
+function ago(iso){
+  if(!iso) return null;
+  const s=Math.max(0,(Date.now()-Date.parse(iso))/1000);
+  if(s<90) return Math.round(s)+"s ago";
+  if(s<5400) return Math.round(s/60)+"m ago";
+  return Math.round(s/3600)+"h ago";
+}
+function bar(d){
+  const segs=[["seg-up",d.uptime_pct||0],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)]];
+  const totalMin=(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0);
+  window._downMin=totalMin;
+  return segs.map(([c,w])=>`<i class="${c}" style="width:${w}%"></i>`).join("");
+}
+let _dur=0;
+function pct(min){ return _dur>0 ? 100*(min||0)/_dur : 0; }
+
+function render(d){
+  // freshness / staleness (machine may be down if data old)
+  const a=ago(d.updated); const oldS=(Date.now()-Date.parse(d.updated))/1000;
+  const stale=oldS>360;
+  $("fresh").className="fresh"+(stale?" stale":"");
+  $("fresh").innerHTML=(stale?"⚠ data "+a+" — machine may be down":"updated "+a)+" · refresh 2m";
+
+  const up=d.bot_up && !stale;
+  $("health").className="badge "+(up?"up":"down");
+  $("health").innerHTML=`<span class="dot"></span>${up?"LIVE":"DOWN"}`;
+
+  // total minutes for the uptime bar scale
+  const dn=(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0);
+  const upMin = d.uptime_pct!=null ? dn*(d.uptime_pct)/(100-d.uptime_pct||1) : 0;
+  _dur = upMin+dn;
+
+  const scoring=d.scoring_now;
+  const mt=d.market_type;
+  const rc=d.rph_calm, rv=d.rph_vol, haveR=(rc!=null||rv!=null);
+
+  $("root").innerHTML=`
+  <div class="grid">
+    <div class="card">
+      <div class="lbl">reward today</div>
+      <div class="big">$${nn(d.reward_today)}</div>
+      <div class="sub">${d.floor_cleared?'<span class="pill g">floor cleared</span>':'<span class="pill w">below floor</span>'} · proj $${nn(d.reward_proj)}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">right now</div>
+      <div class="big">${scoring?'<span style="color:var(--good)">scoring</span>':(d.cooling_now?'<span style="color:var(--accent)">cooling</span>':'<span style="color:var(--warn)">idle</span>')}</div>
+      <div class="sub">${d.funded_now||0} funded · ${d.cooling_now||0} cooling · ${nn(mt)}</div>
+    </div>
+
+    <div class="card wide">
+      <div class="lbl">order uptime today</div>
+      <div class="big">${nn(d.uptime_pct)}%</div>
+      <div class="bar">${bar(d)}</div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--good)"></i>up ${_dur?Math.round(upMin):0}m</span>
+        <span><i class="sw" style="background:var(--accent)"></i>cooldown ${nn(d.down_cooldown_min)}m</span>
+        <span><i class="sw" style="background:var(--warn)"></i>one-sided ${nn(d.down_oneside_min)}m</span>
+        <span><i class="sw" style="background:var(--bad)"></i>rotation ${nn(d.down_rotation_min)}m</span>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <div class="lbl">calm vs volatile · reward / active-hour</div>
+      ${haveR?`<div class="cmp">
+        <div class="col ${rc!=null&&(rv==null||rc>=rv)?'win':''}"><div class="t">calm</div><div class="n">$${nn(rc)}</div></div>
+        <div class="col ${rv!=null&&(rc==null||rv>rc)?'win':''}"><div class="t">volatile</div><div class="n">$${nn(rv)}</div></div>
+      </div><div class="note">1 day = noisy · ~2wks for a real read · ~1mo to price the fill tail</div>`
+      :`<div class="note">accumulating — needs a few days of data</div>`}
+    </div>
+
+    <div class="card wide">
+      <div class="lbl">today</div>
+      <div class="rowline"><span class="k">DANGER events</span><span class="v">${nn(d.danger_today)}</span></div>
+      <div class="rowline"><span class="k">cooldowns cleared / dropped</span><span class="v">${nn(d.cd_clear_today)} / ${nn(d.cd_drop_today)}</span></div>
+      <div class="rowline"><span class="k">not-scoring ejects</span><span class="v">${nn(d.eject_today)}</span></div>
+      <div class="rowline"><span class="k">adverse fills</span><span class="v" style="color:${d.fills_today>0?'var(--warn)':'var(--good)'}">${nn(d.fills_today)}</span></div>
+      <div class="rowline"><span class="k">heartbeat</span><span class="v">${d.heartbeat_age_s!=null?d.heartbeat_age_s+'s':'—'}</span></div>
+    </div>
+  </div>`;
+}
+
+async function load(){
+  try{
+    const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
+    if(!r.ok){ if(r.status===403){$("fresh").innerHTML="⏳ GitHub rate limit — retrying";return;} throw new Error("HTTP "+r.status); }
+    const g=await r.json();
+    const d=JSON.parse(g.files["data.json"].content);
+    render(d);
+  }catch(e){
+    $("root").innerHTML=`<div class="err">couldn't load status<br><span style="font-size:11px">${e.message}</span></div>`;
+    $("fresh").innerHTML="retrying…";
+  }
+}
+load();
+setInterval(load,120000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+</script>
+</body>
+</html>

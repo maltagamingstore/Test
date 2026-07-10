@@ -44,7 +44,7 @@
 
   .bar{height:9px;border-radius:5px;background:#1b2938;overflow:hidden;display:flex;margin-top:8px}
   .bar i{display:block;height:100%}
-  .seg-up{background:var(--good)} .seg-cd{background:var(--accent)} .seg-one{background:var(--warn)} .seg-rot{background:var(--bad)}
+  .seg-up{background:var(--good)} .seg-cd{background:var(--accent)} .seg-one{background:var(--warn)} .seg-rot{background:var(--bad)} .seg-off{background:#4a5b6b}
   .legend{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -82,9 +82,7 @@ function ago(iso){
   return Math.round(s/3600)+"h ago";
 }
 function bar(d){
-  const segs=[["seg-up",d.uptime_pct||0],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)]];
-  const totalMin=(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0);
-  window._downMin=totalMin;
+  const segs=[["seg-up",pct(d.up_min)],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)],["seg-off",pct(d.down_offline_min)]];
   return segs.map(([c,w])=>`<i class="${c}" style="width:${w}%"></i>`).join("");
 }
 let _dur=0;
@@ -101,10 +99,9 @@ function render(d){
   $("health").className="badge "+(up?"up":"down");
   $("health").innerHTML=`<span class="dot"></span>${up?"LIVE":"DOWN"}`;
 
-  // total minutes for the uptime bar scale
-  const dn=(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0);
-  const upMin = d.uptime_pct!=null ? dn*(d.uptime_pct)/(100-d.uptime_pct||1) : 0;
-  _dur = upMin+dn;
+  // total minutes for the uptime bar scale = FULL window (up + all downtime incl. offline/maintenance)
+  const upMin=d.up_min||0;
+  _dur = upMin+(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0)+(d.down_offline_min||0);
 
   const scoring=d.scoring_now;
   const mt=d.market_type;
@@ -139,12 +136,14 @@ function render(d){
     <div class="card wide">
       <div class="lbl">order uptime today</div>
       <div class="big">${nn(d.uptime_pct)}%</div>
+      <div class="sub">scoring share of full elapsed day · incl. offline/maintenance</div>
       <div class="bar">${bar(d)}</div>
       <div class="legend">
-        <span><i class="sw" style="background:var(--good)"></i>up ${_dur?Math.round(upMin):0}m</span>
+        <span><i class="sw" style="background:var(--good)"></i>up ${nn(d.up_min,0)}m</span>
         <span><i class="sw" style="background:var(--accent)"></i>cooldown ${nn(d.down_cooldown_min)}m</span>
         <span><i class="sw" style="background:var(--warn)"></i>one-sided ${nn(d.down_oneside_min)}m</span>
         <span><i class="sw" style="background:var(--bad)"></i>rotation ${nn(d.down_rotation_min)}m</span>
+        <span><i class="sw" style="background:#4a5b6b"></i>offline ${nn(d.down_offline_min)}m</span>
       </div>
     </div>
 

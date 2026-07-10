@@ -73,6 +73,33 @@ const nn=(v,d="—")=>(v===null||v===undefined)?d:v;
 const signed=v=>v==null?"—":(v>=0?"+":"")+Number(v).toFixed(2);
 const pnlCol=v=>v==null?"var(--muted)":(v>0?"var(--good)":v<0?"var(--bad)":"var(--muted)");
 const creditIn=m=>m==null?"—":(m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+"m");
+function eqSvg(s,lo,hi){
+  const W=340,H=96,pad=5,n=s.length;
+  const t0=s[0][0],t1=s[n-1][0],spanT=Math.max(1,t1-t0),spanV=hi-lo;
+  const X=t=>pad+(t-t0)/spanT*(W-2*pad);
+  const Y=v=>spanV<0.01?H/2:pad+(1-(v-lo)/spanV)*(H-2*pad);
+  const line=s.map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const area=`${pad},${(H-pad).toFixed(1)} ${line} ${(W-pad)},${(H-pad).toFixed(1)}`;
+  const lx=X(t1).toFixed(1),ly=Y(s[n-1][1]).toFixed(1);
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+    <polygon points="${area}" fill="var(--accent)" opacity="0.13"/>
+    <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="1.7" vector-effect="non-scaling-stroke"/>
+    <circle cx="${lx}" cy="${ly}" r="2.8" fill="var(--accent)"/>
+  </svg>`;
+}
+function eqCard(d){
+  const s=d.equity_series;
+  if(!s||s.length<2) return '<div class="lbl">portfolio · last 7 days</div><div class="note">accumulating equity history…</div>';
+  const vs=s.map(p=>p[1]),lo=Math.min(...vs),hi=Math.max(...vs);
+  const fmt=e=>{const t=new Date(e*1000);return t.getDate()+"/"+(t.getMonth()+1);};
+  return `<div class="lbl">portfolio · last 7 days ($ vs time)</div>
+    ${eqSvg(s,lo,hi)}
+    <div class="legend" style="justify-content:space-between;margin-top:7px">
+      <span>${fmt(s[0][0])}</span>
+      <span>low $${lo.toFixed(2)} · high $${hi.toFixed(2)}</span>
+      <span style="color:var(--ink);font-weight:700">now $${vs[vs.length-1].toFixed(2)}</span>
+    </div>`;
+}
 
 function ago(iso){
   if(!iso) return null;
@@ -114,6 +141,10 @@ function render(d){
       <div class="big">$${nn(d.equity)}</div>
       <div class="sub">cash $${nn(d.cash)} · positions $${nn(d.pos_value)}</div>
       <div class="sub">run P&L <b style="color:${pnlCol(d.run_pnl)}">$${signed(d.run_pnl)}</b> · lifetime <b style="color:${pnlCol(d.lifetime_pnl)}">$${signed(d.lifetime_pnl)}</b> · kill cushion <b style="color:${d.kill_cushion!=null&&d.kill_cushion<1?'var(--bad)':'var(--muted)'}">$${nn(d.kill_cushion)}</b></div>
+    </div>
+
+    <div class="card wide">
+      ${eqCard(d)}
     </div>
 
     <div class="card">

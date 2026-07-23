@@ -24,6 +24,11 @@
   .badge .dot{width:8px;height:8px;border-radius:50%}
   .up{background:var(--good-bg);color:var(--good)} .up .dot{background:var(--good);box-shadow:0 0 8px var(--good)}
   .down{background:var(--bad-bg);color:var(--bad)} .down .dot{background:var(--bad)}
+  .maint{background:var(--warn-bg);color:var(--warn)} .maint .dot{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  .seg-mnt{background:#8a7ff0}
+  .tabs{display:inline-flex;gap:4px;margin-left:8px}
+  .tabs b{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:999px;background:#1b2938;color:var(--muted);cursor:pointer;font-weight:700}
+  .tabs b.on{background:var(--accent);color:#06141c}
   .fresh{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 14px;display:flex;gap:8px;align-items:center}
   .stale{color:var(--warn)}
 
@@ -87,16 +92,20 @@ function eqSvg(s,lo,hi){
     <circle cx="${lx}" cy="${ly}" r="2.8" fill="var(--accent)"/>
   </svg>`;
 }
+let eqRange=7, lastD=null;
+function setEq(r){ eqRange=r; if(lastD) render(lastD); }
 function eqCard(d){
-  const s=d.equity_series;
-  if(!s||s.length<2) return '<div class="lbl">portfolio · last 7 days</div><div class="note">accumulating equity history…</div>';
+  const s=eqRange===30?d.equity_series_30d:eqRange===14?d.equity_series_14d:d.equity_series;
+  const tabs=`<span class="tabs">${[7,14,30].map(r=>`<b class="${eqRange===r?'on':''}" onclick="setEq(${r})">${r}d</b>`).join("")}</span>`;
+  if(!s||s.length<2) return `<div class="lbl">portfolio · P/L ${tabs}</div><div class="note">accumulating equity history for ${eqRange}d…</div>`;
   const vs=s.map(p=>p[1]),lo=Math.min(...vs),hi=Math.max(...vs);
+  const delta=vs[vs.length-1]-vs[0];
   const fmt=e=>{const t=new Date(e*1000);return t.getDate()+"/"+(t.getMonth()+1);};
-  return `<div class="lbl">portfolio · last 7 days ($ vs time)</div>
+  return `<div class="lbl">portfolio · last ${eqRange} days ($ vs time) ${tabs}</div>
     ${eqSvg(s,lo,hi)}
     <div class="legend" style="justify-content:space-between;margin-top:7px">
       <span>${fmt(s[0][0])}</span>
-      <span>low $${lo.toFixed(2)} · high $${hi.toFixed(2)}</span>
+      <span>low $${lo.toFixed(2)} · high $${hi.toFixed(2)} · Δ <b style="color:${pnlCol(delta)}">$${signed(delta)}</b></span>
       <span style="color:var(--ink);font-weight:700">now $${vs[vs.length-1].toFixed(2)}</span>
     </div>`;
 }
@@ -109,26 +118,33 @@ function ago(iso){
   return Math.round(s/3600)+"h ago";
 }
 function bar(d){
-  const segs=[["seg-up",pct(d.up_min)],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)],["seg-off",pct(d.down_offline_min)]];
+  const segs=[["seg-up",pct(d.up_min)],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)],["seg-mnt",pct(d.down_maintenance_min)],["seg-off",pct(d.down_offline_min)]];
   return segs.map(([c,w])=>`<i class="${c}" style="width:${w}%"></i>`).join("");
 }
 let _dur=0;
 function pct(min){ return _dur>0 ? 100*(min||0)/_dur : 0; }
 
 function render(d){
+  lastD=d;
   // freshness / staleness (machine may be down if data old)
   const a=ago(d.updated); const oldS=(Date.now()-Date.parse(d.updated))/1000;
   const stale=oldS>360;
   $("fresh").className="fresh"+(stale?" stale":"");
-  $("fresh").innerHTML=(stale?"⚠ data "+a+" — machine may be down":"updated "+a)+" · refresh 2m";
+  $("fresh").innerHTML=(stale?"⚠ data "+a+" — machine may be down":"updated "+a)+" · refresh 2m"
+    +(d.maint_now?` · 🔧 ${d.maint_now}`:"");
 
-  const up=d.bot_up && !stale;
-  $("health").className="badge "+(up?"up":"down");
-  $("health").innerHTML=`<span class="dot"></span>${up?"LIVE":"DOWN"}`;
+  // STATE-aware badge (2026-07-23): maintenance and a kill-switch halt are NOT the same as a crash-DOWN.
+  // A stale feed overrides everything (a dead machine can't report its own state).
+  const st=stale?"STALE":(d.state||((d.bot_up)?"UP-SCORING":"DOWN"));
+  const cls=st.startsWith("UP")?"up":(st==="MAINTENANCE"?"maint":"down");
+  const label={ "UP-SCORING":"LIVE","UP-IDLE":"LIVE · idle","MAINTENANCE":"MAINTENANCE",
+                "HALTED-KILL":"HALTED (kill)","DOWN":"DOWN","STALE":"NO DATA" }[st]||st;
+  $("health").className="badge "+cls;
+  $("health").innerHTML=`<span class="dot"></span>${label}`;
 
   // total minutes for the uptime bar scale = FULL window (up + all downtime incl. offline/maintenance)
   const upMin=d.up_min||0;
-  _dur = upMin+(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0)+(d.down_offline_min||0);
+  _dur = upMin+(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0)+(d.down_offline_min||0)+(d.down_maintenance_min||0);
 
   const scoring=d.scoring_now;
   const mt=d.market_type;
@@ -174,6 +190,7 @@ function render(d){
         <span><i class="sw" style="background:var(--accent)"></i>cooldown ${nn(d.down_cooldown_min)}m</span>
         <span><i class="sw" style="background:var(--warn)"></i>one-sided ${nn(d.down_oneside_min)}m</span>
         <span><i class="sw" style="background:var(--bad)"></i>rotation ${nn(d.down_rotation_min)}m</span>
+        <span><i class="sw" style="background:#8a7ff0"></i>maintenance ${nn(d.down_maintenance_min,0)}m</span>
         <span><i class="sw" style="background:#4a5b6b"></i>down ${nn(d.down_offline_min)}m</span>
       </div>
     </div>

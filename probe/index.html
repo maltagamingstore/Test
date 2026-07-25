@@ -115,13 +115,28 @@ function render(d){
     </div>
   </div>`;
 
-  // ---- money
-  const p=d.pnl_settled;
+  // ---- money, split by WHICH outcome produced it (the whole economics in three rows)
+  const p=d.pnl_settled, bo=d.pnl_by_outcome||{};
+  const sgn=v=>v==null?"m":(v>0?"g":(v<0?"b":"m"));
   h+=`<div class="card">
     <div class="lbl">money</div>
-    <div class="big ${p==null?"m":(p>0?"g":(p<0?"b":""))}">${f2(p)}</div>
+    <div class="big ${sgn(p)}">${f2(p)}</div>
     <div class="sub">settled P&amp;L from REAL resolutions${d.unresolved?` · ${d.unresolved} pending`:""}<br>
       equity ${f2(d.equity)} · cash ${f2(d.cash)} · bags ${f2(d.pos_value)} · ${d.open_orders??"–"} resting</div>
+    <table style="margin-top:11px">
+      <tr><th>setup</th><th style="text-align:right">n</th><th style="text-align:right">total</th><th style="text-align:right">avg each</th></tr>
+      <tr><td class="g">both legs filled</td><td style="text-align:right">${d.both||0}</td>
+          <td style="text-align:right" class="${sgn(bo.both)}">${f2(bo.both)}</td>
+          <td style="text-align:right" class="${sgn(d.avg_win)}">${f2(d.avg_win)}</td></tr>
+      <tr><td class="b">one leg only</td><td style="text-align:right">${d.one||0}</td>
+          <td style="text-align:right" class="${sgn(bo.one)}">${f2(bo.one)}</td>
+          <td style="text-align:right" class="${sgn(d.avg_loss)}">${f2(d.avg_loss)}</td></tr>
+      <tr><td class="m">neither filled</td><td style="text-align:right">${d.neither||0}</td>
+          <td style="text-align:right" class="m">${f2(bo.neither)}</td>
+          <td style="text-align:right" class="m">$0.00</td></tr>
+    </table>
+    <div class="sub" style="margin-top:9px">the edge survives only while
+      <b>both-fills × ${f2(d.avg_win)}</b> outweighs <b>one-legs × ${f2(d.avg_loss)}</b></div>
   </div>`;
 
   // ---- armed now
@@ -133,12 +148,14 @@ function render(d){
   // ---- recent markets
   if(d.recent&&d.recent.length){
     h+=`<div class="card"><div class="lbl">recent markets</div><div class="scroll"><table>
-      <tr><th>time</th><th>window</th><th>out</th><th>yes</th><th>no</th><th>rest</th></tr>`;
+      <tr><th>time</th><th>window</th><th>out</th><th>yes</th><th>no</th><th>rest</th>
+          <th style="text-align:right">P/L</th></tr>`;
     for(const r of d.recent){
       const cls=r.o==="both"?"g":(r.o==="one"?"b":"m");
       h+=`<tr><td class="m">${r.ts}</td><td>${r.t}</td>
         <td class="${cls}">${r.o}</td><td>${r.y}</td><td>${r.no}</td>
-        <td class="m">${r.rf==null?"–":Math.round(r.rf*100)+"%"}</td></tr>`;
+        <td class="m">${r.rf==null?"–":Math.round(r.rf*100)+"%"}</td>
+        <td style="text-align:right" class="${sgn(r.p)}"><b>${r.p==null?"…":f2(r.p)}</b></td></tr>`;
     }
     h+=`</table></div></div>`;
   }

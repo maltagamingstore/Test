@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Up/Down Probe</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  :root{
+    --bg:#0c141c; --card:#141f2b; --card2:#0f1925; --ink:#dce7f0; --muted:#8098ab;
+    --line:#243645; --accent:#3ec2f0;
+    --good:#35d39a; --good-bg:#0e2a24; --warn:#f0b54a; --warn-bg:#2b2411;
+    --bad:#f4708e; --bad-bg:#2c1520;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;padding:16px 14px 40px;max-width:560px;margin:0 auto}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+  .top h1{font-size:15px;margin:0;font-family:var(--mono);letter-spacing:.02em;font-weight:600;color:var(--muted)}
+  .badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .up{background:var(--good-bg);color:var(--good)} .up .dot{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .down{background:var(--bad-bg);color:var(--bad)} .down .dot{background:var(--bad)}
+  .fresh{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 14px}
+  .stale{color:var(--warn)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+  .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .big{font-size:26px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .hero .big{font-size:42px}
+  .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+  .grid4 .card{padding:10px 8px;text-align:center;margin:0}
+  .grid4 .big{font-size:20px}
+  .grid4 .lbl{margin-bottom:5px;letter-spacing:.08em}
+  .pill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block}
+  .pill.g{background:var(--good-bg);color:var(--good)} .pill.w{background:var(--warn-bg);color:var(--warn)}
+  .pill.b{background:var(--bad-bg);color:var(--bad)}
+  .g{color:var(--good)} .b{color:var(--bad)} .w{color:var(--warn)} .m{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:4px 4px;border-bottom:1px solid var(--line);
+     font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
+  td{padding:5px 4px;border-bottom:1px solid #1b2836;font-variant-numeric:tabular-nums}
+  .scroll{overflow-x:auto}
+  .note{font-size:11px;color:var(--muted);line-height:1.55;font-family:var(--mono)}
+  .err{background:var(--bad-bg);color:var(--bad);padding:14px;border-radius:12px;font-family:var(--mono);font-size:12px}
+  a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>UP/DOWN PROBE</h1>
+  <span id="badge" class="badge down"><span class="dot"></span>loading</span>
+</div>
+<p class="fresh" id="fresh">connecting…</p>
+<div id="root"></div>
+<p style="margin-top:18px"><a href="../bot/">← mm_bot dashboard</a></p>
+
+<script>
+const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
+const $=id=>document.getElementById(id);
+const f2=v=>(v==null?"–":(v<0?"-":"")+"$"+Math.abs(v).toFixed(2));
+
+function render(d){
+  const up=d.probe_up;
+  $("badge").className="badge "+(up?"up":"down");
+  $("badge").innerHTML=`<span class="dot"></span>${up?"RUNNING":"STOPPED"}`;
+  const age=d.log_age_s;
+  $("fresh").innerHTML=`updated ${d.updated||"–"} · log ${age==null?"–":age+"s"} old`
+    + (age!=null&&age>300?` <span class="stale">(stale)</span>`:"");
+
+  const n=d.n||0, be=d.breakeven_pct, bp=d.both_pct;
+  const pass=d.verdict==="PASS";
+  let h="";
+
+  // ---- THE ONE NUMBER: completion rate vs break-even.
+  // A verdict at tiny n is worse than no verdict — one both-fill swings the rate by tens of points,
+  // so below MIN_N the page refuses to call it and says how many more markets it needs.
+  const MIN_N=20, thin=n<MIN_N;
+  let pill;
+  if(n===0)      pill=`<span class="pill w">no data yet</span>`;
+  else if(thin)  pill=`<span class="pill w">n=${n} — too small to call (need ${MIN_N})</span>`;
+  else           pill=`<span class="pill ${pass?"g":"b"}">${d.verdict}</span>`;
+  h+=`<div class="card hero">
+    <div class="lbl">pair completion — the whole question</div>
+    <div class="big ${n===0||thin?"w":(pass?"g":"b")}">${bp==null?"–":bp+"%"}</div>
+    <div class="sub">break-even needs <b>${be}%</b> at bid ${d.bid} &nbsp;${pill}<br>
+      both legs filled on ${d.both||0} of ${n} market${n===1?"":"s"}
+      ${thin&&n>0?`<br><span class="w">indicative only — a single fill moves this by ${Math.round(100/Math.max(n,1))} pts</span>`:""}</div>
+  </div>`;
+
+  // ---- counts
+  h+=`<div class="grid4">
+    <div class="card"><div class="lbl">mkts</div><div class="big">${n}</div></div>
+    <div class="card"><div class="lbl">both</div><div class="big ${d.both?"g":"m"}">${d.both||0}</div></div>
+    <div class="card"><div class="lbl">one</div><div class="big ${d.one?"b":"m"}">${d.one||0}</div></div>
+    <div class="card"><div class="lbl">none</div><div class="big m">${d.neither||0}</div></div>
+  </div>`;
+
+  // ---- adverse selection: did a lone leg ever win?
+  const ow=d.one_sided_win_pct;
+  h+=`<div class="grid">
+    <div class="card">
+      <div class="lbl">one-sided fills that WON</div>
+      <div class="big ${ow==null?"m":(ow>0?"w":"b")}">${ow==null?"–":ow+"%"}</div>
+      <div class="sub">n=${d.one_sided_n||0} resolved<br>0% = pure adverse selection</div>
+    </div>
+    <div class="card">
+      <div class="lbl">any fill at all</div>
+      <div class="big ${d.any_fill_pct?"":"m"}">${d.any_fill_pct==null?"–":d.any_fill_pct+"%"}</div>
+      <div class="sub">is our bid reachable<br>at ${d.bid} × ${d.size} sh?</div>
+    </div>
+  </div>`;
+
+  // ---- money
+  const p=d.pnl_settled;
+  h+=`<div class="card">
+    <div class="lbl">money</div>
+    <div class="big ${p==null?"m":(p>0?"g":(p<0?"b":""))}">${f2(p)}</div>
+    <div class="sub">settled P&amp;L from REAL resolutions${d.unresolved?` · ${d.unresolved} pending`:""}<br>
+      equity ${f2(d.equity)} · cash ${f2(d.cash)} · bags ${f2(d.pos_value)} · ${d.open_orders??"–"} resting</div>
+  </div>`;
+
+  // ---- armed now
+  if(d.armed&&d.armed.length){
+    h+=`<div class="card"><div class="lbl">armed now</div><div class="note">`
+      + d.armed.map(a=>`▸ ${a}`).join("<br>") + `</div></div>`;
+  }
+
+  // ---- recent markets
+  if(d.recent&&d.recent.length){
+    h+=`<div class="card"><div class="lbl">recent markets</div><div class="scroll"><table>
+      <tr><th>time</th><th>window</th><th>out</th><th>yes</th><th>no</th><th>rest</th></tr>`;
+    for(const r of d.recent){
+      const cls=r.o==="both"?"g":(r.o==="one"?"b":"m");
+      h+=`<tr><td class="m">${r.ts}</td><td>${r.t}</td>
+        <td class="${cls}">${r.o}</td><td>${r.y}</td><td>${r.no}</td>
+        <td class="m">${r.rf==null?"–":Math.round(r.rf*100)+"%"}</td></tr>`;
+    }
+    h+=`</table></div></div>`;
+  }
+
+  h+=`<div class="card"><div class="lbl">what this measures</div><div class="note">
+    Rests BUY ${d.bid} on BOTH tokens of 5-min Bitcoin Up/Down boards, ${d.size} sh per leg.<br>
+    <b>both fill</b> → the pair redeems face for ${f2(2*d.bid*d.size)} paid → locked gain.<br>
+    <b>one fills</b> → unhedged; it loses if the price kept going (it usually did).<br>
+    Break-even completion is q* = b/(1−b) = ${be}%. P&amp;L uses real resolutions, never an assumption.
+  </div></div>`;
+
+  $("root").innerHTML=h;
+}
+
+async function load(){
+  try{
+    const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
+    if(!r.ok){ if(r.status===403){$("fresh").innerHTML="⏳ GitHub rate limit — retrying";return;} throw new Error("HTTP "+r.status); }
+    const g=await r.json();
+    const file=g.files["probe.json"];
+    if(!file) throw new Error("probe.json not in gist yet");
+    render(JSON.parse(file.content));
+  }catch(e){
+    $("root").innerHTML=`<div class="err">couldn't load probe status<br><span style="font-size:11px">${e.message}</span></div>`;
+    $("fresh").innerHTML="retrying…";
+  }
+}
+load();
+setInterval(load,60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+</script>
+</body>
+</html>

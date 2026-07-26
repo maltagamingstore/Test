@@ -58,6 +58,7 @@
 
 <script>
 const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
+const RAW="https://gist.githubusercontent.com/maltagamingstore/7f02dc27888b5de7ad0e7290128a4fe6/raw/pair65.json";
 const $=id=>document.getElementById(id);
 const usd=v=>(v==null?"–":(v<0?"-":"+")+"$"+Math.abs(v).toFixed(2));
 const c1=v=>(v==null?"–":(v>0?"+":"")+v.toFixed(1)+"¢");
@@ -136,17 +137,24 @@ function render(d){
 }
 
 async function load(){
+  // raw CDN first: no 60/hr API rate limit (the API path froze the page after ~45 min of polling)
   try{
-    const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
-    if(!r.ok) throw new Error("gist HTTP "+r.status);
-    const g=await r.json();
-    const file=g.files&&g.files["pair65.json"];
-    if(!file) throw new Error("pair65.json not in gist yet — start pair65_push.py");
-    let txt=file.content;
-    if(file.truncated){ const rr=await fetch(file.raw_url,{cache:"no-store"}); txt=await rr.text(); }
-    render(JSON.parse(txt));
-  }catch(e){
-    $("root").innerHTML=`<div class="err">${e.message}</div>`;
+    const r=await fetch(RAW+"?t="+Date.now(),{cache:"no-store"});
+    if(r.ok){ render(await r.json()); return; }
+    throw new Error("raw HTTP "+r.status);
+  }catch(e1){
+    try{
+      const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
+      if(!r.ok) throw new Error("gist HTTP "+r.status);
+      const g=await r.json();
+      const file=g.files&&g.files["pair65.json"];
+      if(!file) throw new Error("pair65.json not in gist yet — start pair65_push.py");
+      let txt=file.content;
+      if(file.truncated){ const rr=await fetch(file.raw_url,{cache:"no-store"}); txt=await rr.text(); }
+      render(JSON.parse(txt));
+    }catch(e){
+      $("root").innerHTML=`<div class="err">${e1.message} · ${e.message}</div>`;
+    }
   }
 }
 load();

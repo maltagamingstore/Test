@@ -54,8 +54,12 @@ const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
 const el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild;};
 const n=(v,d=0)=>v===null||v===undefined?"—":Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
 const money=(v)=>{ if(v===null||v===undefined) return "—";
-  const a=Math.abs(v); if(a===0) return "0¢";
-  return a<1 ? (v*100).toFixed(2)+"¢" : "$"+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  // ALWAYS dollars. A cents glyph reads as dollars at a glance ("5.69¢" was misread as $5), and every
+  // other figure on this page is dollars — one unit, no mental conversion.
+  if(v===0) return "$0.00";
+  const a=Math.abs(v);
+  if(a<0.005) return (v<0?"-":"")+"<$0.01";      // non-zero but rounds to zero: say so, never show $0.00
+  return (v<0?"-":"")+"$"+a.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
 const pct=(v,d=1)=>v===null||v===undefined?"—":(100*v).toFixed(d)+"%";
 
 // Sample-size honesty. This project's failures were confident arithmetic on samples too small to

@@ -133,17 +133,19 @@ function render(d){
     const seed=rp.seed||1000;
     const nDead=Object.values(RR).filter(a=>a.dead).length;
     const rows=Object.keys(RR).map(k=>{const a=RR[k];
+      const R=a.rejected||{};
+      a.rej=["band","lifetime","info","shield"].filter(x=>R[x]>0).map(x=>x+" "+R[x]).join(", ");
       const st=a.dead?'<span class="crit">☠ DEAD</span>'
               :(a.floor_cleared?'<span class="good">✓ earning</span>':'<span class="warn">idle today</span>');
       const ut=a.util_pct>=50?"":(a.util_pct>=20?"warn":"crit");
       const fm=a.dead?'<span class="crit">$0.0000</span>':"$"+n(a.farmed,4);
       return `<tr><td>${k}</td><td>${a.held}</td><td>$${n(a.deployed)}</td>
         <td class="${ut}">${n(a.util_pct,1)}%</td><td>$${n(a.rew_day_raw,2)}</td>
-        <td>${n(a.pct_time_paid,0)}%</td><td>${fm}</td><td>$${n(a.peak_exposure)}</td><td>${st}</td></tr>`;}).join("");
+        <td>${n(a.pct_time_paid,0)}%</td><td>${fm}</td><td class="muted">${a.rej||"—"}</td><td>${st}</td></tr>`;}).join("");
     app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}
       <span class="muted">· ${n(rp.rulers?Object.values(RR)[0].obs_days:0,2)} days observed</span></h2>
       <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>
-      <th>$/day rate</th><th>% time paid</th><th>REWARD FARMED</th><th>peak exposure</th><th>status</th></tr></thead>
+      <th>$/day rate</th><th>% time paid</th><th>REWARD FARMED</th><th>rejected by</th><th>status</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
       ${nDead?`<div class="note crit"><b>☠ ${nDead} of ${Object.keys(RR).length} rulers are DEAD.</b>
       Polymarket forfeits the ENTIRE day's reward if the book totals under $1 across all bets. A ruler

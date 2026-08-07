@@ -61,8 +61,14 @@ function power(md){ if(md===null||md===undefined) return ["—","muted"];
   if(md>=30) return ["adequate","good"]; if(md>=10) return ["thin","warn"]; return ["UNDERPOWERED","crit"]; }
 
 function render(d){
-  document.getElementById("hdr").textContent =
-    "updated "+(d.updated||"?")+"  ·  spec "+(d.spec_hash||"?")+"  ·  aggregates only — no market names or positions";
+  const age=d.scan_age_s, stale=(age===null||age===undefined)?false:age>900;
+  const acls=stale?"crit":"good";
+  const atxt=(age===null||age===undefined)?"unknown":(age<90?Math.round(age)+"s ago":(age/60).toFixed(1)+" min ago");
+  document.getElementById("hdr").innerHTML =
+    '<b>LAST SCAN: <span class="'+acls+'">'+(d.scan_ts||"?")+" · "+atxt+(stale?" ▲ STALE":"")+'</span></b>'
+    +'<br>feeder updated '+(d.updated||"?")+"  ·  spec "+(d.spec_hash||"?")
+    +"  ·  aggregates only — no market names or positions"
+    +(stale?'<br><span class="crit">The screener has not written in over 15 minutes — everything below describes a dead feed, not the market.</span>':"");
   const app=document.getElementById("app"); app.innerHTML="";
   const c=d.coverage||{}, g=d.gates||{};
 
@@ -119,6 +125,27 @@ function render(d){
       <div class="wrap"><table><thead><tr><th>arm</th><th>markets</th><th>mkt-days</th><th>$/mkt-day</th><th>tail events</th><th>rate 95% hi</th><th>power</th></tr></thead>
       <tbody>${mk("base (calm)",b)}${mk("shadow (news-banned)",s)}</tbody></table></div>${ratio}
       <div class="note">Thin-book snapshots (modeled share ≥25%) are excluded from both arms — the live bot refuses those books, so counting their reward would measure a trap. Tail rates show the Poisson upper bound: zero events is an upper bound, never proof of safety.</div></div>`));
+  }
+
+  // ---- per-ruler virtual portfolios ----
+  const rp=d.ruler_pnl||{}, RR=rp.rulers||{};
+  if(Object.keys(RR).length){
+    const seed=rp.seed||1000;
+    const rows=Object.keys(RR).map(k=>{const a=RR[k];
+      const fl=a.floor_cleared?'<span class="good">PASS</span>':'<span class="crit">ZERO</span>';
+      const ut=a.util_pct>=50?"":(a.util_pct>=20?"warn":"crit");
+      return `<tr><td>${k}</td><td>${a.held}</td><td>$${n(a.deployed)}</td>
+        <td class="${ut}">${n(a.util_pct,1)}%</td><td>$${n(a.idle)}</td><td>$${n(a.worst_total)}</td>
+        <td>$${n(a.rew_day_raw,2)}</td><td>${fl}</td><td>${n(a.ret_on_seed_pct,3)}%</td></tr>`;}).join("");
+    app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}</h2>
+      <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>
+      <th>idle</th><th>worst case</th><th>$/day raw</th><th>$1 floor</th><th>ret on seed</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+      <div class="note"><b>Idle capital is a real cost.</b> A ruler holding one market deploys ~10% and leaves the
+      rest dead, so return on SEED is the comparable number, not per-market yield. <b>$/day raw</b> is before the
+      floor; <b>ZERO</b> means the whole book projects under $1/day and the venue pays nothing at all for that day —
+      not a reduced amount. Reward is MODELLED and the model ran ~2× hot historically and is still uncalibrated:
+      valid for ranking rulers against each other (the bias is common to all), not as a dollar forecast.</div></div>`));
   }
 
   // ---- rulers + divergence ----

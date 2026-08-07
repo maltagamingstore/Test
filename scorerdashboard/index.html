@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ruler Tournament — Scorer</title>
+<style>
+  :root{
+    --surface:#1a1a19; --plane:#0d0d0d; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --base:#383835;
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    --o1:#7fb3d5; --o2:#6c9fc4; --o3:#598bb3; --o4:#4677a2; --o5:#336391;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);
+       font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       padding:14px;max-width:1180px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 2px;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .card{background:var(--surface);border:1px solid var(--grid);border-radius:10px;padding:13px 15px;margin-bottom:12px}
+  .card h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:700}
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+  .tile{flex:1 1 150px;background:var(--surface);border:1px solid var(--grid);border-radius:10px;padding:11px 13px}
+  .lab{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .val{font-size:23px;font-weight:700;margin-top:3px;line-height:1.1}
+  .sub2{font-size:11px;color:var(--muted);margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:right;
+     padding:0 0 6px;font-weight:700;border-bottom:1px solid var(--base)}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:7px 0;text-align:right;border-bottom:1px solid var(--grid);font-size:13px}
+  tr:last-child td{border-bottom:none}
+  .good{color:var(--good)} .warn{color:var(--warn)} .serious{color:var(--serious)} .crit{color:var(--crit)}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid}
+  .note{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .bar{height:9px;border-radius:3px;background:var(--o3);display:inline-block;vertical-align:middle}
+  .wrap{overflow-x:auto}
+  .warnbox{border-color:var(--crit);background:#2a1414}
+  .gates{display:flex;flex-wrap:wrap;gap:7px}
+  .gate{font-size:11px;color:var(--ink2);border:1px solid var(--grid);border-radius:6px;padding:3px 8px}
+  code{color:var(--ink2)}
+</style>
+</head>
+<body>
+<h1>Ruler Tournament — Scorer</h1>
+<div class="sub" id="hdr">loading…</div>
+<div id="app"></div>
+
+<script>
+const RAW="https://gist.githubusercontent.com/maltagamingstore/7f02dc27888b5de7ad0e7290128a4fe6/raw/scorer.json";
+const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
+const el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild;};
+const n=(v,d=0)=>v===null||v===undefined?"—":Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(v,d=1)=>v===null||v===undefined?"—":(100*v).toFixed(d)+"%";
+
+// Sample-size honesty. This project's failures were confident arithmetic on samples too small to
+// carry it, so every figure is rendered with its n and anything underpowered is LABELLED, not hidden.
+function power(md){ if(md===null||md===undefined) return ["—","muted"];
+  if(md>=30) return ["adequate","good"]; if(md>=10) return ["thin","warn"]; return ["UNDERPOWERED","crit"]; }
+
+function render(d){
+  document.getElementById("hdr").textContent =
+    "updated "+(d.updated||"?")+"  ·  spec "+(d.spec_hash||"?")+"  ·  aggregates only — no market names or positions";
+  const app=document.getElementById("app"); app.innerHTML="";
+  const c=d.coverage||{}, g=d.gates||{};
+
+  // ---- gates banner: the pre-registered commitments, shown NEXT TO the data they judge ----
+  app.appendChild(el(`<div class="card"><h2>Standing commitments</h2><div class="gates">
+    <span class="gate">seed $${n(g.seed_usd)}</span>
+    <span class="gate">abandon at −${g.abandon_pct}%</span>
+    <span class="gate">per-market cap ${g.exposure_cap_pct}%</span>
+    <span class="gate">size target ${g.target_worst_frac}% of cap</span>
+    <span class="gate">payout floor $${g.floor_usd_day}/day</span>
+    <span class="gate">review: ${g.review_date||"—"}</span>
+    <span class="gate">primary bar: ${g.primary_bar||"—"}</span></div></div>`));
+
+  // ---- coverage ----
+  const capped=(c.capped||[]).length>0;
+  app.appendChild(el(`<div class="card ${capped?"warnbox":""}"><h2>Universe coverage</h2><div class="row">
+    <div class="tile"><div class="lab">fetched</div><div class="val">${n(c.fetched)}</div><div class="sub2">$${n(c.pool_fetched)}/day</div></div>
+    <div class="tile"><div class="lab">classified</div><div class="val">${n(c.classified)}</div><div class="sub2">${n(c.unclassified)} pending</div></div>
+    <div class="tile"><div class="lab">calm</div><div class="val">${n(c.calm)}</div><div class="sub2">$${n(c.pool_calm)}/day</div></div>
+    <div class="tile"><div class="lab">books read</div><div class="val">${n(c.screened)}</div><div class="sub2">$${n(c.pool_screened)}/day</div></div>
+    <div class="tile"><div class="lab">scan</div><div class="val ${capped?"crit":"good"}">${capped?"▲ CAPPED":"✓ full"}</div>
+      <div class="sub2">${capped?(c.capped||[]).join(", "):"stopped: "+(c.paging||"?")}</div></div>
+  </div><div class="note">A cap that binds means the scan is incomplete — the strip turns red rather than quietly reporting a smaller universe.</div></div>`));
+
+  // ---- placement A/B ----
+  const p=d.placement||{};
+  if(p.n){
+    app.appendChild(el(`<div class="card"><h2>Placement A/B — shield vs touch <span class="muted">(identical holdings, 100% divergence)</span></h2>
+      <div class="row">
+      <div class="tile"><div class="lab">paired obs</div><div class="val">${n(p.n)}</div><div class="sub2">wall = ${n(p.wall)} sh</div></div>
+      <div class="tile"><div class="lab">shield is a no-op</div><div class="val ${p.noop_pct>50?"serious":""}">${p.noop_pct}%</div><div class="sub2">wall_price returns the touch</div></div>
+      <div class="tile"><div class="lab">reward forfeited</div><div class="val warn">${p.reward_forfeit_pct??"—"}%</div><div class="sub2">when it does engage (n=${n(p.n_moved)})</div></div>
+      <div class="tile"><div class="lab">depth gained</div><div class="val">${p.depth_gain??"—"}×</div><div class="sub2">shares ahead of us</div></div>
+      </div><div class="note">Paired per-row medians, never a ratio of medians — that error manufactured a 1.7× effect where the median row had none. Whether the trade is worth it depends on flatten latency, which is still unmeasured on the farmable set.</div></div>`));
+  }
+
+  // ---- shadow arm ----
+  const sa=d.shadow_arm||{}, b=sa.base, s=sa.shadow;
+  if(b||s){
+    const mk=(k,a)=>{ if(!a) return `<tr><td>${k}</td><td colspan="6" class="muted">no data</td></tr>`;
+      const [pw,cl]=power(a.mkt_days);
+      return `<tr><td>${k}</td><td>${n(a.markets)}</td><td>${n(a.mkt_days,2)}</td>
+        <td>${a.reward_per_mkt_day===null?"—":"$"+n(a.reward_per_mkt_day,3)}</td>
+        <td>${n(a.gaps)}</td><td>${a.gap_rate_ci_hi===null?"—":"≤"+n(a.gap_rate_ci_hi,3)}</td>
+        <td class="${cl}">${pw}</td></tr>`; };
+    let ratio="";
+    if(b&&s&&b.reward_per_mkt_day>0){
+      const r=s.reward_per_mkt_day/b.reward_per_mkt_day;
+      const weak=(s.mkt_days||0)<30;
+      ratio=`<div class="note ${weak?"crit":""}">shadow / base reward = <b>${r.toFixed(1)}×</b>${weak?
+        " — <b>NOT a finding.</b> Below 30 market-days this is noise; the prior from independent work is ~9.9×, and a large gap from it is a reason to distrust the reading, not to believe it.":""}</div>`;
+    }
+    app.appendChild(el(`<div class="card"><h2>Shadow paper arm <span class="muted">(measurement before money — DEC-0027)</span></h2>
+      <div class="wrap"><table><thead><tr><th>arm</th><th>markets</th><th>mkt-days</th><th>$/mkt-day</th><th>tail events</th><th>rate 95% hi</th><th>power</th></tr></thead>
+      <tbody>${mk("base (calm)",b)}${mk("shadow (news-banned)",s)}</tbody></table></div>${ratio}
+      <div class="note">Thin-book snapshots (modeled share ≥25%) are excluded from both arms — the live bot refuses those books, so counting their reward would measure a trap. Tail rates show the Poisson upper bound: zero events is an upper bound, never proof of safety.</div></div>`));
+  }
+
+  // ---- rulers + divergence ----
+  const R=d.rulers||{}, keys=Object.keys(R);
+  if(keys.length){
+    const max=Math.max(1,...keys.map(k=>R[k]));
+    const rows=keys.map(k=>`<tr><td>${k}</td><td>${R[k]}</td>
+      <td style="text-align:left"><span class="bar" style="width:${Math.max(3,150*R[k]/max)}px"></span></td></tr>`).join("");
+    const dv=(d.divergence||[]).slice().sort((x,y)=>y.d-x.d);
+    const dvr=dv.map(x=>{const cl=x.d===0?"crit":(x.d>=5?"good":"warn");
+      const v=x.d===0?"identical — no information":(x.d>=5?"decidable":"thin");
+      return `<tr><td>${x.a.split("_")[0]} vs ${x.b.split("_")[0]}</td><td>${x.d}</td><td class="${cl}">${v}</td></tr>`;}).join("");
+    app.appendChild(el(`<div class="card"><h2>Selection rulers — holdings &amp; divergence</h2>
+      <div class="wrap"><table><thead><tr><th>ruler</th><th>holds</th><th style="text-align:left">&nbsp;</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="note">A pair only carries information where the rulers <i>disagree</i>. Pairs at 0 are being compared on nothing.</div>
+      <div class="wrap" style="margin-top:10px"><table><thead><tr><th>pair</th><th>divergent</th><th style="text-align:right">verdict</th></tr></thead><tbody>${dvr}</tbody></table></div></div>`));
+  }
+}
+
+async function load(){
+  let d=null;
+  try{ const r=await fetch(RAW+"?t="+Date.now(),{cache:"no-store"}); if(r.ok) d=await r.json(); }catch(e){}
+  if(!d){ try{
+      const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
+      const j=await r.json(); const f=j.files&&j.files["scorer.json"];
+      let t=f?f.content:null;
+      if(f&&f.truncated){ const rr=await fetch(f.raw_url,{cache:"no-store"}); t=await rr.text(); }
+      if(t) d=JSON.parse(t);
+    }catch(e){} }
+  if(!d){ document.getElementById("hdr").innerHTML='<span class="crit">NO DATA — the scorer feeder has not published yet.</span>'; return; }
+  render(d);
+}
+load(); setInterval(load,120000);
+</script>
+</body>
+</html>

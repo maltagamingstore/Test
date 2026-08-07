@@ -131,21 +131,32 @@ function render(d){
   const rp=d.ruler_pnl||{}, RR=rp.rulers||{};
   if(Object.keys(RR).length){
     const seed=rp.seed||1000;
+    const nDead=Object.values(RR).filter(a=>a.dead).length;
     const rows=Object.keys(RR).map(k=>{const a=RR[k];
-      const fl=a.floor_cleared?'<span class="good">PASS</span>':'<span class="crit">ZERO</span>';
+      const st=a.dead?'<span class="crit">☠ DEAD</span>'
+              :(a.floor_cleared?'<span class="good">✓ earning</span>':'<span class="warn">idle today</span>');
       const ut=a.util_pct>=50?"":(a.util_pct>=20?"warn":"crit");
+      const fm=a.dead?'<span class="crit">$0.0000</span>':"$"+n(a.farmed,4);
       return `<tr><td>${k}</td><td>${a.held}</td><td>$${n(a.deployed)}</td>
-        <td class="${ut}">${n(a.util_pct,1)}%</td><td>$${n(a.idle)}</td><td>$${n(a.worst_total)}</td>
-        <td>$${n(a.rew_day_raw,2)}</td><td>${fl}</td><td>${n(a.ret_on_seed_pct,3)}%</td></tr>`;}).join("");
-    app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}</h2>
+        <td class="${ut}">${n(a.util_pct,1)}%</td><td>$${n(a.rew_day_raw,2)}</td>
+        <td>${n(a.pct_time_paid,0)}%</td><td>${fm}</td><td>$${n(a.peak_exposure)}</td><td>${st}</td></tr>`;}).join("");
+    app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}
+      <span class="muted">· ${n(rp.rulers?Object.values(RR)[0].obs_days:0,2)} days observed</span></h2>
       <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>
-      <th>idle</th><th>worst case</th><th>$/day raw</th><th>$1 floor</th><th>ret on seed</th></tr></thead>
+      <th>$/day rate</th><th>% time paid</th><th>REWARD FARMED</th><th>peak exposure</th><th>status</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <div class="note"><b>Idle capital is a real cost.</b> A ruler holding one market deploys ~10% and leaves the
-      rest dead, so return on SEED is the comparable number, not per-market yield. <b>$/day raw</b> is before the
-      floor; <b>ZERO</b> means the whole book projects under $1/day and the venue pays nothing at all for that day —
-      not a reduced amount. Reward is MODELLED and the model ran ~2× hot historically and is still uncalibrated:
-      valid for ranking rulers against each other (the bias is common to all), not as a dollar forecast.</div></div>`));
+      ${nDead?`<div class="note crit"><b>☠ ${nDead} of ${Object.keys(RR).length} rulers are DEAD.</b>
+      Polymarket forfeits the ENTIRE day's reward if the book totals under $1 across all bets. A ruler
+      projecting $0.16/day banks <b>zero every day, forever</b>, while still carrying full fill and tail
+      risk — its expected P&amp;L is not "small", it is strictly negative by construction. Dead is a
+      structural verdict, not a low score: the veto stack cannot assemble a book that clears the floor.</div>`:""}
+      <div class="note"><b>REWARD FARMED</b> is the benchmark — cumulative $ actually banked (floored rate
+      integrated over observed time), which is what any future loss gets measured against. <b>% time paid</b>
+      is the share of cycles the book cleared $1/day. <b>Idle capital is a real cost</b>: a ruler holding one
+      market deploys ~10% and leaves the rest dead. Reward is MODELLED and the model ran ~2× hot historically
+      and is still uncalibrated — valid for ranking rulers against each other, not as a dollar forecast.
+      Realised fill losses are <b>not yet measured</b> (no live fills), so this is the reward side of the
+      ledger only.</div></div>`));
   }
 
   // ---- rulers + divergence ----

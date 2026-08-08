@@ -157,6 +157,33 @@ function render(d){
       return `<tr><td>${k}</td><td>${a.held}</td><td>$${n(a.deployed)}</td>
         <td class="${ut}">${n(a.util_pct,1)}%</td><td>$${n(a.rew_day_raw,2)}</td>
         <td>${n(a.pct_time_paid,0)}%</td><td>${fm}</td><td>${fc}</td><td class="${nc}">${money(net)}</td><td class="muted">${a.rej||"—"}</td><td>${st}</td></tr>`;}).join("");
+    // ---- CURRENT CAPITAL (added 2026-08-08) ----
+    const C=d.capital||{}, CR=C.rows||{};
+    if(Object.keys(CR).length){
+      const crows=Object.keys(CR).sort((a,b)=>CR[a].capital-CR[b].capital).map(k=>{
+        const v=CR[k], dd=v.drawdown_pct;
+        const cls=v.abandoned?"crit":(dd<0?"warn":(dd>0?"good":"muted"));
+        return `<tr><td>${k}</td><td>$${n(v.seed,0)}</td><td>${money(v.farmed)}</td>
+          <td>${money(v.fill_pnl)}</td><td class="${cls}"><b>$${n(v.capital,2)}</b></td>
+          <td class="${cls}">${dd>=0?"+":""}${n(dd,3)}%</td>
+          <td class="muted">$${n(v.capital_back,2)} .. $${n(v.capital_front,2)}</td>
+          <td>${v.abandoned?'<span class="crit">☠ ABANDONED</span>':'<span class="good">alive</span>'}</td></tr>`;}).join("");
+      app.appendChild(el(`<div class="card"><h2>Current capital
+        <span class="muted">· seed $${n(C.seed,0)} each · abandon at −${n(C.abandon_pct,0)}%</span></h2>
+        <div class="wrap"><table><thead><tr><th>ruler</th><th>seed</th><th>reward farmed</th>
+        <th>fill P&amp;L</th><th>CAPITAL</th><th>drawdown</th><th>queue interval</th><th>gate</th></tr></thead>
+        <tbody>${crows}</tbody></table></div>
+        <div class="note"><b>capital = seed + reward farmed + fill P&amp;L</b> (fill P&amp;L at the pro-rata
+        expectation; the grey interval is the back..front queue range). <b>This did not exist until
+        2026-08-08</b>, and its absence mattered: the abandonment criterion is "45% of capital lost", but the
+        only capital-ish number published was <code>ret_on_seed_pct</code> = reward-per-day ÷ seed — a reward
+        RATE that ignores fill P&amp;L entirely and can only ever go up. A gate defined on capital loss was
+        reading a number that could not fall, so it could never fire no matter how much an arm bled.
+        Abandonment is judged on the EXPECTATION, not the worst-case tail — retiring an arm for its unlucky
+        end of the queue interval would kill strategies for bad luck. Reward is still MODELLED and ran ~2×
+        hot historically, so capital is only as calibrated as the reward half of it.</div></div>`));
+    }
+
     app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}
       <span class="muted">· ${n(rp.rulers?Object.values(RR)[0].obs_days:0,2)} days observed</span></h2>
       <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>

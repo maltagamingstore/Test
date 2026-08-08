@@ -189,6 +189,13 @@ function render(d){
       identifies no interior optimum and 1800s was pre-registered before these numbers existed. NOT priced:
       capital lock, forgone reward while holding a bag, and tail risk growing with holding time — all three
       argue for waiting less.
+      <br><br><b>⚠ THE BOT DOES NOT RUN THIS POLICY YET.</b> We are in SIMULATION only —
+      <code>mm_bot.py</code> contains zero references to <code>exit_policy</code> and has no timed hold at
+      all (it merges immediately, then relies on quote skew, flattening only on triggers: 6 adverse fills,
+      2 days to resolution, or the −30% catastrophe floor). So the bot can hold a bag far LONGER than 1800s,
+      past anything we have measured. Wiring the policy into the bot is a <b>pre-live gate item
+      (TASK-0021)</b>, deliberately deferred: we learn the right constant here first, then upgrade the bot
+      immediately before going live.
       <br><br><b>⚠ OUR SELECTION PAIRS AT 0%.</b> The 82-market population merges 78% of fills at 1800s; the
       markets our rulers actually hold merged <b>0 of 11</b> — three of four got fills on ONE side only, and
       the fourth's two legs came 32 min apart, just past the policy. One-sided flow is adverse selection in

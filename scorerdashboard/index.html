@@ -178,6 +178,15 @@ function render(d){
       unknowable from public data and is the difference between eating the whole print and getting nothing,
       so both bounds are shown and the truth lies between them. Costed as (mid at +1800s − fill price) × size,
       horizon pre-registered.
+      <br><br><b>EXIT MODE = "touch" (realized), not "mid" (paper).</b> A fill is costed by FLATTENING —
+      selling at the bid / buying at the ask — because that is what happens when you go flat instead of
+      MERGING. Marking to the mid assumes a costless exit that nobody gets. On the first 11 marks the two
+      disagree by $3.22 <i>and disagree in sign</i>: +$2.29 marked to mid vs −$0.93 flattened, and −$2.04 at
+      30s. Going flat fast is the expensive case, which matches the live experience this project recorded.
+      Merging (YES+NO → $1) pays no spread and is a THIRD case, not modelled here: historically only
+      <b>43% of filled windows were balanced enough to merge</b> (74/171), and merge rescued that quadrant
+      completely (−$14.14 → +$0.70/mkt/day, 98% positive) while doing nothing for the directional one
+      (−$19.55, unchanged). So this column is the DIRECTIONAL/no-merge cost.
       <br><br><b>READ THE BOUNDS BY SIGN.</b> FRONT is simply the MOST fills, BACK the FEWEST — that is a bound
       on VOLUME, not on loss. While fill P&amp;L is negative, FRONT is the pessimistic case; while it is
       POSITIVE, FRONT is the <i>optimistic</i> one and BACK is the conservative read. Today the two disagree

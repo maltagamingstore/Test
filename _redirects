@@ -3,4 +3,6 @@
 /tradelockanalytics  /index.html   200
 /tradelockpropmode   /index.html   200
 /feedback            /index.html   200
+/scorerdashboard     /score        301
+/scorerdashboard/*   /score        301
 /*                   /index.html   200

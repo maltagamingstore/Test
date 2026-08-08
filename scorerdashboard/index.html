@@ -174,9 +174,14 @@ function render(d){
       and is still uncalibrated — valid for ranking rulers against each other, not as a dollar forecast.
       <b>Fill P&amp;L</b> is now measured from REAL public trade prints joined to our 12s book snapshots
       (<code>fill_marks.py</code>), not inferred from book movement. Each row shows the FRONT-of-queue bound;
-      the <span class="muted">grey</span> figure beside it is the BACK-of-queue bound. Queue position is
-      unknowable from public data and is the difference between eating the whole print and getting nothing,
-      so both bounds are shown and the truth lies between them. Costed as (mid at +1800s − fill price) × size,
+      the <span class="muted">grey</span> figure beside it is the BACK-of-queue bound. The headline number
+      is now the <b>PRO-RATA EXPECTATION</b>: our share of the level is clip/(depth_ahead+clip), and a sweep
+      of size S gives us that share of S, capped at our clip. The venue matches price-time, not pro-rata —
+      but this project already established that off-chain matching makes queue position UNOBSERVABLE, and
+      with our position unknown and uniform inside the level, the pro-rata share IS the expected fill under
+      price-time. So front/back remain the honest extremes and the headline is the expectation between them.
+      <b>It lands near the pessimistic end</b> (−$4.27 expected vs −$3.72 front, −$4.31 back): the big sweeps
+      that hurt still reach us, while the small favourable fills scale down with our share. Costed as (mid at +1800s − fill price) × size,
       horizon pre-registered.
       <br><br><b>ONE EXIT POLICY, IDENTICAL FOR EVERY ARM</b> (<code>exit_policy.py</code>,
       <code>exit-v1:wait1800/merge-immediate/flatten-touch</code>). Merge the instant a YES+NO pair exists;

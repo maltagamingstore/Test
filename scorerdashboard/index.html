@@ -178,6 +178,11 @@ function render(d){
       unknowable from public data and is the difference between eating the whole print and getting nothing,
       so both bounds are shown and the truth lies between them. Costed as (mid at +1800s − fill price) × size,
       horizon pre-registered.
+      <br><br><b>READ THE BOUNDS BY SIGN.</b> FRONT is simply the MOST fills, BACK the FEWEST — that is a bound
+      on VOLUME, not on loss. While fill P&amp;L is negative, FRONT is the pessimistic case; while it is
+      POSITIVE, FRONT is the <i>optimistic</i> one and BACK is the conservative read. Today the two disagree
+      by 4×, and most arms fill zero times at the back of the queue, so the back column is the number to
+      trust when this panel looks good.
       <br><br><b>CORRECTED 2026-08-08 — this panel used to read "0 fills", and that was wrong.</b> The old
       detector fired only when <code>best_ask ≤ our_bid</code>, i.e. the ask side collapsing THROUGH our level.
       A taker hitting a resting BID consumes BID depth and leaves the ask untouched, so it was blind to the

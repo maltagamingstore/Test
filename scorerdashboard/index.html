@@ -178,6 +178,21 @@ function render(d){
       unknowable from public data and is the difference between eating the whole print and getting nothing,
       so both bounds are shown and the truth lies between them. Costed as (mid at +1800s − fill price) × size,
       horizon pre-registered.
+      <br><br><b>ONE EXIT POLICY, IDENTICAL FOR EVERY ARM</b> (<code>exit_policy.py</code>,
+      <code>exit-v1:wait1800/merge-immediate/flatten-touch</code>). Merge the instant a YES+NO pair exists;
+      hold a one-sided bag up to <b>1800s</b> hoping the second leg fills so the pair merges free; on timeout
+      flatten at the touch. Pinned so that a P&amp;L difference between arms is attributable to SELECTION —
+      exit was previously unmodelled, and we measured that it decides the <i>sign</i>.
+      Derived from <b>8,056 real fills / 82 markets</b>: P(pair) 27.1% @60s · 49.5% @300s · 68.3% @900s ·
+      78.0% @1800s · 87.0% @3600s; EV/fill −$0.235 @60s → +$0.104 @1800s. Going flat fast is the worst
+      available choice. 1800s (not the better-scoring 3600s) because the curve never turns over, so the data
+      identifies no interior optimum and 1800s was pre-registered before these numbers existed. NOT priced:
+      capital lock, forgone reward while holding a bag, and tail risk growing with holding time — all three
+      argue for waiting less.
+      <br><br><b>⚠ OUR SELECTION PAIRS AT 0%.</b> The 82-market population merges 78% of fills at 1800s; the
+      markets our rulers actually hold merged <b>0 of 11</b> — three of four got fills on ONE side only, and
+      the fourth's two legs came 32 min apart, just past the policy. One-sided flow is adverse selection in
+      its purest form, and it means the merge economics that make farming work are not reaching our picks.
       <br><br><b>EXIT MODE = "touch" (realized), not "mid" (paper).</b> A fill is costed by FLATTENING —
       selling at the bid / buying at the ask — because that is what happens when you go flat instead of
       MERGING. Marking to the mid assumes a costless exit that nobody gets. On the first 11 marks the two

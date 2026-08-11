@@ -261,6 +261,41 @@ function render(d){
       genuine tail-risk signal, it is just not "fills".</div></div>`));
   }
 
+  // ---- THE 13 FARMERS (2026-08-11) ----
+  const WH=d.whales||{}, WR=WH.rows||[];
+  if(WR.length){
+    const wrows=WR.map(w=>{
+      const bk=(w.unrealized==null)?'<span class="muted">?</span>'
+        :(w.unrealized>0?'<span class="good">GREEN</span>':'<span class="crit">RED</span>');
+      const eff=(w.reward_usd&&w.n_pos)?(w.reward_usd/w.n_pos):null;
+      return `<tr><td>${w.rank}</td>
+        <td><b>${w.name}</b></td>
+        <td><a href="https://polymarket.com/profile/${w.addr}" target="_blank" rel="noopener">${w.addr.slice(0,10)}…</a></td>
+        <td>$${n(w.reward_usd||0,0)}</td><td>${w.n_pos==null?'?':n(w.n_pos,0)}</td>
+        <td>${w.unrealized==null?'?':money(w.unrealized)}</td><td>${bk}</td>
+        <td>${w.red_pct==null?'?':n(w.red_pct,0)+'%'}</td>
+        <td>${w.merge_pct==null?'?':n(w.merge_pct,1)+'%'}</td>
+        <td class="muted">${w.question||'—'}</td>
+        <td>${w.answer==null?'<span class="muted">—</span>':n(w.answer,2)}</td></tr>`;}).join("");
+    app.appendChild(el(`<div class="card"><h2>The 13 farmers
+      <span class="muted">· re-confirmed ${WH.asof||'never'}</span></h2>
+      <div class="wrap"><table><thead><tr><th>#</th><th>name</th><th>wallet</th><th>reward/day</th>
+      <th>pos</th><th>unrealized</th><th>book</th><th>red</th><th>merge</th>
+      <th>daily question</th><th>answer</th></tr></thead><tbody>${wrows}</tbody></table></div>
+      <div class="note">Found by harvesting the on-chain reward distributor
+      (<code>0xd152f549…</code>) — <b>2,455 wallets were paid in a single day</b>, and these are the 13
+      above $1,000/day. Names are <b>pinned to addresses, not ranks</b> (ranks move daily).
+      <b>alpha</b> is the one we found first (rank #3), and <code>RW_whale_copy</code> copies HIS market
+      selection. Every dossier claim names one number — the <b>daily question</b> — which
+      <code>whale_daily.py</code> re-measures each day so a stale note is visible rather than merely
+      wrong. On day one it caught its own author: alpha was described as the heaviest merger, and
+      nu&nbsp;18.7%, gamma&nbsp;16.4% and iota&nbsp;13.9% all merge more.
+      <br><br><b>⚠ Book health is NOT capital efficiency.</b> theta has the best book (+$97k) but runs
+      ~$944k of basis — 0.14%/day, versus alpha's 8.05%. The efficiency leaders are
+      <b>kappa 14.50%, lambda 14.35%, delta 12.76%</b>, all with small books and near-zero merge rates.
+      Wallet links open the Polymarket profile.</div></div>`));
+  }
+
   // ---- rulers + divergence ----
   const R=d.rulers||{}, keys=Object.keys(R);
   if(keys.length){

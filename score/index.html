@@ -189,6 +189,14 @@ function render(d){
       <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>
       <th>$/day rate</th><th>% time paid</th><th>REWARD FARMED</th><th>fill P&amp;L</th><th>NET</th><th>rejected by</th><th>status</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
+      ${(function(){const E=d.expect||{};const ks=Object.keys(E);if(!ks.length)return"";
+        return `<div class="note"><b>PRE-REGISTERED EXPECTATIONS.</b> Every arm states what we expect
+        BEFORE reading it, so a surprise is a finding rather than a story told afterwards. Two arms are
+        deliberate NEGATIVE CONTROLS whose job is to lose — <code>R7_all_vetoes</code> and
+        <code>RK_kappa_copy</code>. If either wins, distrust the scorer, not the vetoes.
+        <div class="wrap"><table><thead><tr><th>arm</th><th>what we expect, and what a surprise means</th>
+        </tr></thead><tbody>${ks.map(k=>`<tr><td><b>${k}</b></td><td class="muted">${E[k]}</td></tr>`).join("")}
+        </tbody></table></div></div>`;})()}
       ${nDead?`<div class="note crit"><b>☠ ${nDead} of ${Object.keys(RR).length} rulers are DEAD.</b>
       Polymarket forfeits the ENTIRE day's reward if the book totals under $1 across all bets. A ruler
       projecting $0.16/day banks <b>zero every day, forever</b>, while still carrying full fill and tail

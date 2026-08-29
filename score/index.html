@@ -184,6 +184,53 @@ function render(d){
         hot historically, so capital is only as calibrated as the reward half of it.</div></div>`));
     }
 
+    // ---- ROLLING T3 HEALTH MONITOR. Deliberately sits ABOVE Ruler P&L and BELOW Current capital:
+    // capital shows the LIFETIME t3_ratio, this shows the same quantity on a rolling window, and the
+    // pair is the point. An arm can be fine lifetime and bleeding this week; only the second is
+    // actionable while live.
+    if(d.t3_monitor && d.t3_monitor.rows && Object.keys(d.t3_monitor.rows).length){
+      const M=d.t3_monitor, ord={ALERT:0,WATCH:1,CHRONIC:2,OK:3,THIN:4,INSUFFICIENT:5};
+      const cls={ALERT:"crit",WATCH:"warn",CHRONIC:"crit",OK:"good",THIN:"muted",INSUFFICIENT:"muted"};
+      const rws=Object.entries(M.rows).sort((a,b)=>(ord[a[1].status]??9)-(ord[b[1].status]??9)||a[0].localeCompare(b[0]))
+        .map(([k,v])=>{
+          const thin=v.roll_t3===null||v.roll_t3===undefined;
+          // roll vs life is the read: a big negative delta is an arm that WAS working and now is not.
+          const dlt=(!thin&&v.life_t3)?(v.roll_t3-v.life_t3):null;
+          return `<tr><td>${k}</td>
+            <td class="muted">${v.clean_days??"—"}</td>
+            <td>${thin?"—":"$"+n(v.roll_reward,2)}</td>
+            <td>${thin?"—":"$"+n(v.roll_bleed,2)}</td>
+            <td class="${cls[v.status]||""}"><b>${thin?"—":n(v.roll_t3,2)}</b></td>
+            <td class="muted">${v.life_t3==null?"—":n(v.life_t3,2)}</td>
+            <td class="${dlt==null?"muted":(dlt<-0.3?"crit":(dlt<0?"warn":"good"))}">${dlt==null?"—":(dlt>=0?"+":"")+n(dlt,2)}</td>
+            <td class="${cls[v.status]||""}"><b>${v.status}</b></td>
+            <td class="muted" style="text-align:left">${v.why||""}</td></tr>`;}).join("");
+      const hot=M.n_alert>0;
+      app.appendChild(el(`<div class="card ${hot?"warnbox":""}"><h2>Rolling T3 health — ${M.window_days}-day window
+        <span class="muted">· ${M.days_of_history} days of history · ${M.n_alert} ALERT · ${M.n_chronic||0} never-profitable</span>
+        <span class="pill" style="border-color:var(--muted);color:var(--muted)">MONITOR — NEVER HALTS</span></h2>
+        <div class="wrap"><table><thead><tr><th>ruler</th><th>days</th><th>reward (${M.window_days}d)</th>
+        <th>bleed (${M.window_days}d)</th><th>ROLLING T3</th><th>lifetime T3</th><th>Δ</th><th>status</th>
+        <th style="text-align:left">read</th></tr></thead><tbody>${rws}</tbody></table></div>
+        <div class="note"><b>This reports. It never stops anything, and that is a measurement rather than
+        a preference.</b> The halt version — <i>stop when reward over W days &lt; bleed over the same W
+        days, N days running</i> — was backtested across the whole arm history. Realised T3 ranks the arms
+        perfectly (kappa_copy 1.15 down to rank_thick 0.09), yet <b>every</b> setting in W=3..7 × N=1..3
+        halted all five losing arms <b>and</b> at least one winner. At T3 1.15 the margin over break-even is
+        15%, which daily noise swamps over any window that fits inside 10 days of history. A stop that fires
+        on RK_kappa_copy — our only DEC-0023 passer — is an off switch, so it ships as an instrument and the
+        history it accumulates becomes the calibration data for a real N later.
+        <br><br><b>Δ is the column to read</b>: rolling minus lifetime. Negative means an arm that used to
+        work is not working now, which is the only thing a lifetime average cannot show you.
+        <b>ALERT</b> = this arm's current window ranks among the worst it has produced. <b>CHRONIC</b> = it
+        has never once had a profitable window — that is a selection verdict, not a health alert, and it is
+        the <i>less</i> urgent of the two. <b>THIN</b>/<b>INSUFFICIENT</b> = not enough windows to say, and
+        they carry no status on purpose. Both sides are SUMMED over the window and then divided — never an
+        average of daily ratios, because the venue's $1/day reward floor makes a quiet day credit zero.
+        Windows overlap by ${M.window_days-1} days, so a rank is a description of range, <b>not</b> a p-value.
+        ${M.error?'<br><br><span class="crit">monitor error: '+M.error+'</span>':""}</div></div>`));
+    }
+
     app.appendChild(el(`<div class="card"><h2>Ruler P&amp;L — each runs its own $${n(seed)}
       <span class="muted">· ${n(rp.rulers?Object.values(RR)[0].obs_days:0,2)} days observed</span></h2>
       <div class="wrap"><table><thead><tr><th>ruler</th><th>held</th><th>deployed</th><th>util</th>

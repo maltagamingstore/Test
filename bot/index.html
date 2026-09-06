@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>mm_bot · status</title>
+<title>Tradelock · MM Bot V3</title>
 <style>
   :root{
     --bg:#0c141c; --card:#141f2b; --card2:#0f1925; --ink:#dce7f0; --muted:#8098ab;
@@ -16,7 +16,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
-    -webkit-font-smoothing:antialiased;padding:16px 14px 40px;max-width:560px;margin:0 auto}
+    -webkit-font-smoothing:antialiased;padding:16px 14px 40px;max-width:1000px;margin:0 auto}
   .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
   .top h1{font-size:15px;margin:0;font-family:var(--mono);letter-spacing:.02em;font-weight:600;color:var(--muted)}
   .badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;
@@ -61,174 +61,17 @@
   .win{outline:1px solid var(--good)}
   .note{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:9px;text-align:center}
   .err{font-family:var(--mono);font-size:12px;color:var(--warn);text-align:center;padding:20px}
+.tablebox{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums} th,td{text-align:right;padding:12px 8px;border-bottom:1px solid var(--line);white-space:nowrap} th:first-child,td:first-child{text-align:left} th{color:var(--muted);font-weight:500} button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer} button[aria-pressed=true]{border-color:var(--accent)} .disclaimer{line-height:1.6;font-size:12px;color:var(--muted)} .section-title{font-size:14px;margin:0 0 14px} .full{grid-column:1/-1} a{color:var(--accent)} @media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.big{font-size:26px}}
 </style>
 </head>
 <body>
   <div class="top">
-    <h1>mm_bot · status</h1>
+    <h1>TRADELOCK / MM BOT V3</h1>
     <span id="health" class="badge down"><span class="dot"></span>…</span>
   </div>
   <div id="fresh" class="fresh">connecting…</div>
   <div id="root"></div>
 
-<script>
-const GIST="https://api.github.com/gists/7f02dc27888b5de7ad0e7290128a4fe6";
-const $=id=>document.getElementById(id);
-const nn=(v,d="—")=>(v===null||v===undefined)?d:v;
-const signed=v=>v==null?"—":(v>=0?"+":"")+Number(v).toFixed(2);
-const pnlCol=v=>v==null?"var(--muted)":(v>0?"var(--good)":v<0?"var(--bad)":"var(--muted)");
-const creditIn=m=>m==null?"—":(m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+"m");
-function eqSvg(s,lo,hi){
-  const W=340,H=96,pad=5,n=s.length;
-  const t0=s[0][0],t1=s[n-1][0],spanT=Math.max(1,t1-t0),spanV=hi-lo;
-  const X=t=>pad+(t-t0)/spanT*(W-2*pad);
-  const Y=v=>spanV<0.01?H/2:pad+(1-(v-lo)/spanV)*(H-2*pad);
-  const line=s.map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
-  const area=`${pad},${(H-pad).toFixed(1)} ${line} ${(W-pad)},${(H-pad).toFixed(1)}`;
-  const lx=X(t1).toFixed(1),ly=Y(s[n-1][1]).toFixed(1);
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-    <polygon points="${area}" fill="var(--accent)" opacity="0.13"/>
-    <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="1.7" vector-effect="non-scaling-stroke"/>
-    <circle cx="${lx}" cy="${ly}" r="2.8" fill="var(--accent)"/>
-  </svg>`;
-}
-let eqRange=7, lastD=null;
-function setEq(r){ eqRange=r; if(lastD) render(lastD); }
-function eqCard(d){
-  const s=eqRange===30?d.equity_series_30d:eqRange===14?d.equity_series_14d:d.equity_series;
-  const tabs=`<span class="tabs">${[7,14,30].map(r=>`<b class="${eqRange===r?'on':''}" onclick="setEq(${r})">${r}d</b>`).join("")}</span>`;
-  if(!s||s.length<2) return `<div class="lbl">portfolio · P/L ${tabs}</div><div class="note">accumulating equity history for ${eqRange}d…</div>`;
-  const vs=s.map(p=>p[1]),lo=Math.min(...vs),hi=Math.max(...vs);
-  const delta=vs[vs.length-1]-vs[0];
-  const fmt=e=>{const t=new Date(e*1000);return t.getDate()+"/"+(t.getMonth()+1);};
-  return `<div class="lbl">portfolio · last ${eqRange} days ($ vs time) ${tabs}</div>
-    ${eqSvg(s,lo,hi)}
-    <div class="legend" style="justify-content:space-between;margin-top:7px">
-      <span>${fmt(s[0][0])}</span>
-      <span>low $${lo.toFixed(2)} · high $${hi.toFixed(2)} · Δ <b style="color:${pnlCol(delta)}">$${signed(delta)}</b></span>
-      <span style="color:var(--ink);font-weight:700">now $${vs[vs.length-1].toFixed(2)}</span>
-    </div>`;
-}
-
-function ago(iso){
-  if(!iso) return null;
-  const s=Math.max(0,(Date.now()-Date.parse(iso))/1000);
-  if(s<90) return Math.round(s)+"s ago";
-  if(s<5400) return Math.round(s/60)+"m ago";
-  return Math.round(s/3600)+"h ago";
-}
-function bar(d){
-  const segs=[["seg-up",pct(d.up_min)],["seg-cd",pct(d.down_cooldown_min)],["seg-one",pct(d.down_oneside_min)],["seg-rot",pct(d.down_rotation_min)],["seg-mnt",pct(d.down_maintenance_min)],["seg-off",pct(d.down_offline_min)]];
-  return segs.map(([c,w])=>`<i class="${c}" style="width:${w}%"></i>`).join("");
-}
-let _dur=0;
-function pct(min){ return _dur>0 ? 100*(min||0)/_dur : 0; }
-
-function render(d){
-  lastD=d;
-  // freshness / staleness (machine may be down if data old)
-  const a=ago(d.updated); const oldS=(Date.now()-Date.parse(d.updated))/1000;
-  const stale=oldS>360;
-  $("fresh").className="fresh"+(stale?" stale":"");
-  $("fresh").innerHTML=(stale?"⚠ data "+a+" — machine may be down":"updated "+a)+" · refresh 2m"
-    +(d.maint_now?` · 🔧 ${d.maint_now}`:"");
-
-  // STATE-aware badge (2026-07-23): maintenance and a kill-switch halt are NOT the same as a crash-DOWN.
-  // A stale feed overrides everything (a dead machine can't report its own state).
-  const st=stale?"STALE":(d.state||((d.bot_up)?"UP-SCORING":"DOWN"));
-  const cls=st.startsWith("UP")?"up":(st==="MAINTENANCE"?"maint":"down");
-  const label={ "UP-SCORING":"LIVE","UP-IDLE":"LIVE · idle","MAINTENANCE":"MAINTENANCE",
-                "HALTED-KILL":"HALTED (kill)","DOWN":"DOWN","STALE":"NO DATA" }[st]||st;
-  $("health").className="badge "+cls;
-  $("health").innerHTML=`<span class="dot"></span>${label}`;
-
-  // total minutes for the uptime bar scale = FULL window (up + all downtime incl. offline/maintenance)
-  const upMin=d.up_min||0;
-  _dur = upMin+(d.down_cooldown_min||0)+(d.down_oneside_min||0)+(d.down_rotation_min||0)+(d.down_offline_min||0)+(d.down_maintenance_min||0);
-
-  const scoring=d.scoring_now;
-  const mt=d.market_type;
-  const rc=d.rph_calm, rv=d.rph_vol, haveR=(rc!=null||rv!=null);
-
-  $("root").innerHTML=`
-  <div class="grid">
-    <div class="card wide">
-      <div class="lbl">portfolio</div>
-      <div class="big">$${nn(d.equity)}</div>
-      <div class="sub">cash $${nn(d.cash)} · positions $${nn(d.pos_value)}</div>
-      <div class="sub">run P&L <b style="color:${pnlCol(d.run_pnl)}">$${signed(d.run_pnl)}</b> · lifetime <b style="color:${pnlCol(d.lifetime_pnl)}">$${signed(d.lifetime_pnl)}</b> · kill cushion <b style="color:${d.kill_cushion!=null&&d.kill_cushion<1?'var(--bad)':'var(--muted)'}">$${nn(d.kill_cushion)}</b></div>
-    </div>
-
-    <div class="card wide">
-      ${eqCard(d)}
-    </div>
-
-    <div class="card">
-      <div class="lbl">reward today</div>
-      <div class="big">$${nn(d.reward_today)}</div>
-      <div class="sub">${d.floor_cleared?'<span class="pill g">floor ✓</span>':'<span class="pill w">below floor</span>'} · proj ${d.reward_proj==null?'<span style="color:var(--muted)">insufficient data</span>':'$'+d.reward_proj}</div>
-    </div>
-    <div class="card">
-      <div class="lbl">est @ 02:00</div>
-      <div class="big">${d.reward_proj==null?'<span style="color:var(--muted)">—</span>':'$'+nn(d.est_eod)}</div>
-      <div class="sub">${d.reward_proj==null?'insufficient reward data yet':'equity + reward @ $'+nn(d.reward_rate_active)+'/active-hr'} · credits in ${creditIn(d.credit_in_min)}</div>
-    </div>
-
-    <div class="card wide">
-      <div class="lbl">current bet</div>
-      <div style="font-size:15px;font-weight:600;line-height:1.3;margin-bottom:6px">${nn(d.current_market,"—")}</div>
-      <div class="sub">${scoring?'<span class="pill g">scoring</span>':(d.cooling_now?'<span class="pill n">cooling</span>':'<span class="pill w">idle</span>')} · ${nn(mt)} · ${d.funded_now||0} funded · ${d.cooling_now||0} cooling</div>
-    </div>
-
-    <div class="card wide">
-      <div class="lbl">order uptime today</div>
-      <div class="big">${nn(d.uptime_pct)}%</div>
-      <div class="sub">scoring share of full day · network stalls count as up (orders keep resting)</div>
-      <div class="bar">${bar(d)}</div>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--good)"></i>up ${nn(d.up_min,0)}m</span>
-        <span><i class="sw" style="background:var(--accent)"></i>cooldown ${nn(d.down_cooldown_min)}m</span>
-        <span><i class="sw" style="background:var(--warn)"></i>one-sided ${nn(d.down_oneside_min)}m</span>
-        <span><i class="sw" style="background:var(--bad)"></i>rotation ${nn(d.down_rotation_min)}m</span>
-        <span><i class="sw" style="background:#8a7ff0"></i>maintenance ${nn(d.down_maintenance_min,0)}m</span>
-        <span><i class="sw" style="background:#4a5b6b"></i>down ${nn(d.down_offline_min)}m</span>
-      </div>
-    </div>
-
-    <div class="card wide">
-      <div class="lbl">calm vs volatile · reward / active-hour</div>
-      ${haveR?`<div class="cmp">
-        <div class="col ${rc!=null&&(rv==null||rc>=rv)?'win':''}"><div class="t">calm</div><div class="n">$${nn(rc)}</div></div>
-        <div class="col ${rv!=null&&(rc==null||rv>rc)?'win':''}"><div class="t">volatile</div><div class="n">$${nn(rv)}</div></div>
-      </div><div class="note">1 day = noisy · ~2wks for a real read · ~1mo to price the fill tail</div>`
-      :`<div class="note">accumulating — needs a few days of data</div>`}
-    </div>
-
-    <div class="card wide">
-      <div class="lbl">today</div>
-      <div class="rowline"><span class="k">DANGER events</span><span class="v">${nn(d.danger_today)}</span></div>
-      <div class="rowline"><span class="k">cooldowns cleared / dropped</span><span class="v">${nn(d.cd_clear_today)} / ${nn(d.cd_drop_today)}</span></div>
-      <div class="rowline"><span class="k">not-scoring ejects</span><span class="v">${nn(d.eject_today)}</span></div>
-      <div class="rowline"><span class="k">adverse fills</span><span class="v" style="color:${d.fills_today>0?'var(--warn)':'var(--good)'}">${nn(d.fills_today)}</span></div>
-    </div>
-  </div>`;
-}
-
-async function load(){
-  try{
-    const r=await fetch(GIST,{headers:{"Accept":"application/vnd.github+json"},cache:"no-store"});
-    if(!r.ok){ if(r.status===403){$("fresh").innerHTML="⏳ GitHub rate limit — retrying";return;} throw new Error("HTTP "+r.status); }
-    const g=await r.json();
-    const d=JSON.parse(g.files["data.json"].content);
-    render(d);
-  }catch(e){
-    $("root").innerHTML=`<div class="err">couldn't load status<br><span style="font-size:11px">${e.message}</span></div>`;
-    $("fresh").innerHTML="retrying…";
-  }
-}
-load();
-setInterval(load,120000);
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
-</script>
+<script src="dashboard-v3.js"></script>
 </body>
 </html>

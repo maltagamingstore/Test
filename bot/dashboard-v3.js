@@ -19,6 +19,8 @@ function validateMode(doc) {
   if (detail && (!mode || detail.mode !== mode || (detail.rows || []).some(row => row.mode !== mode))) throw new Error('Mixed-mode markets rejected');
   const breakdown = doc.status?.pnl_breakdown;
   if (breakdown && (!mode || breakdown.mode !== mode)) throw new Error('Mixed-mode P/L breakdown rejected');
+  const uptime = doc.status?.uptime_today;
+  if (uptime && (!mode || uptime.mode !== mode)) throw new Error('Mixed-mode uptime rejected');
   if (!mode && (doc.status || doc.daily.length || detail)) throw new Error('Unidentified mode data rejected');
   return mode;
 }
@@ -52,13 +54,20 @@ function netChangeCard(status) {
 }
 
 function drawChart(rows, mode = 'LIVE') {
-  const points = rows.filter(r => number(r.last_equity));
+  const points = rows.filter(r => number(r.net_equity));
   if (points.length < 2) return `<p class="disclaimer">The trend appears after observations on two UTC days. Only ${esc(mode)} history is included; missing days are not invented.</p>`;
-  const low = Math.min(...points.map(r => r.last_equity)), high = Math.max(...points.map(r => r.last_equity));
+  const low = Math.min(...points.map(r => r.net_equity)), high = Math.max(...points.map(r => r.net_equity));
   const times = points.map(r => Date.parse(r.last_at));
   const t0 = Math.min(...times), span = Math.max(...times) - t0 || 1;
-  const coords = points.map((p,i) => `${20 + (times[i] - t0) / span * 860},${high === low ? 80 : 140 - (p.last_equity - low) / (high - low) * 120}`).join(" ");
-  return `<svg role="img" aria-label="Last observed marked account equity per UTC day, not flow-adjusted profit" viewBox="0 0 900 160" style="width:100%;height:auto"><line x1="20" x2="880" y1="145" y2="145" stroke="var(--line)"/><polyline points="${coords}" fill="none" stroke="var(--accent)" stroke-width="3"/></svg><div class="sub">Observed range ${money(low)} – ${money(high)}. Lines connect observations; gaps are not continuous coverage.</div>`;
+  const coords = points.map((p,i) => `${20 + (times[i] - t0) / span * 860},${high === low ? 80 : 140 - (p.net_equity - low) / (high - low) * 120}`).join(" ");
+  return `<svg role="img" aria-label="Observed net account value including earned reward per UTC day" viewBox="0 0 900 160" style="width:100%;height:auto"><line x1="20" x2="880" y1="145" y2="145" stroke="var(--line)"/><polyline points="${coords}" fill="none" stroke="var(--accent)" stroke-width="3"/></svg><div class="sub">Net range ${money(low)} – ${money(high)}. LIVE adds exact earned reward not yet credited; gaps are not continuous coverage.</div>`;
+}
+
+function uptimeCard(status, dry = false) {
+  const item = status.uptime_today || {};
+  const pct = number(item.percent) ? item.percent.toFixed(1) + '%' : '—';
+  return card(dry ? 'Simulated UTC-day uptime' : 'UTC-day farming uptime', pct,
+    `${number(item.scoring_minutes) ? item.scoring_minutes.toFixed(1) : '—'} scoring min / ${number(item.elapsed_minutes) ? item.elapsed_minutes.toFixed(1) : '—'} elapsed min · pre-start and stale gaps count as downtime`);
 }
 
 function marketTable(detail, now = Date.now(), mode = 'LIVE') {
@@ -92,12 +101,13 @@ function render(doc) {
       ${dry ? card("Simulated change since original capital", `<span style="color:${color(status.net_since_original)}">${signed(status.net_since_original)}</span>`, 'Simulation only; not actual profit or earned rewards.') : netChangeCard(status)}
       ${card("Capital hard-stop floor", money(status.capital_floor), "Original capital " + money(status.original_capital) + " · loss limit " + esc(settings.loss_limit_pct) + "%")}
       ${card("Distance above hard-stop floor", money(status.kill_cushion), "Stop latched: " + (status.latched === true ? "YES" : status.latched === false ? "no" : "—") + " · confirmation checks retained")}
+      ${uptimeCard(status, dry)}
       <section class="card full"><h2 class="section-title">${dry ? 'Simulated change over days' : 'P/L over days'} <span style="color:var(--muted);font-weight:400">/ ${esc(mode || 'no mode')} only</span></h2>
         <div style="display:flex;gap:8px">${[7,14,30].map(n => `<button type="button" data-range="${n}" aria-pressed="${range === n}">${n} days</button>`).join("")}</div>
         ${drawChart(rows, mode)}
-        <div class="tablebox"><table><thead><tr><th>UTC day</th><th>Last equity</th><th>Within-day change</th><th>Since prior observed close</th><th>Samples</th></tr></thead><tbody>
-        ${rows.length ? rows.slice().reverse().map(r => `<tr><td>${esc(r.day)}</td><td>${money(r.last_equity)}</td><td style="color:${color(r.observed_change)}">${signed(r.observed_change)}</td><td style="color:${color(r.since_previous_observation)}">${signed(r.since_previous_observation)}</td><td>${esc(r.samples)}</td></tr>`).join("") : `<tr><td colspan="5">No ${esc(mode || 'current-mode')} history yet. Other-mode and legacy data are excluded.</td></tr>`}
-        </tbody></table></div><p class="disclaimer">Within-day change is last minus first observed equity, not midnight-to-midnight profit. Prior-close change may span missing days. Marked positions are not guaranteed exit proceeds. Uncredited reward estimates are excluded.</p>
+        <div class="tablebox"><table><thead><tr><th>UTC day</th><th>Net incl. earned reward</th><th>Reward farmed</th><th>Within-day net</th><th>Since prior net close</th><th>Samples</th></tr></thead><tbody>
+        ${rows.length ? rows.slice().reverse().map(r => `<tr><td>${esc(r.day)}</td><td>${money(r.net_equity)}</td><td style="color:${color(r.reward_farmed)}">${signed(r.reward_farmed)}</td><td style="color:${color(r.within_day_net)}">${signed(r.within_day_net)}</td><td style="color:${color(r.since_prior_net_close)}">${signed(r.since_prior_net_close)}</td><td>${esc(r.samples)}</td></tr>`).join("") : `<tr><td colspan="6">No ${esc(mode || 'current-mode')} history yet. Other-mode and legacy data are excluded.</td></tr>`}
+        </tbody></table></div><p class="disclaimer">LIVE net values add exact venue-reported earned reward not yet credited; no $1 payout-eligibility floor is applied. Within-day net is last minus first observed marked equity plus today’s earned reward. Prior net close may span missing days. Marked positions are not guaranteed exit proceeds.</p>
       </section>
       ${card(dry ? 'Simulated funded / paired' : "Funded / two-sided resting pairs", `${esc(status.funded)} / ${esc(status.paired)}`, (dry ? 'Simulated pairs are not real orders. Cooling: ' : "Resting pairs are not proof of API-confirmed reward scoring. Cooling: ") + esc(status.cooling))}
       ${card("Applied local settings", esc(settings.capital_buffer_pct) + "%", "Cash allocation · revision " + esc(status.controls?.revision) + " · weather excluded")}
@@ -130,4 +140,4 @@ if (typeof document !== "undefined") {
   load(); setInterval(load, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 }
-if (typeof module !== "undefined") module.exports = {esc, stateFor, drawChart, money, signed, marketTable, netChangeCard, validateMode, render, load};
+if (typeof module !== "undefined") module.exports = {esc, stateFor, drawChart, money, signed, marketTable, netChangeCard, uptimeCard, validateMode, render, load};

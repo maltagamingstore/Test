@@ -17,6 +17,8 @@ function validateMode(doc) {
   if (!Array.isArray(doc.daily) || doc.daily.some(row => !mode || row.mode !== mode)) throw new Error('Mixed-mode history rejected');
   const detail = doc.market_detail;
   if (detail && (!mode || detail.mode !== mode || (detail.rows || []).some(row => row.mode !== mode))) throw new Error('Mixed-mode markets rejected');
+  const breakdown = doc.status?.pnl_breakdown;
+  if (breakdown && (!mode || breakdown.mode !== mode)) throw new Error('Mixed-mode P/L breakdown rejected');
   if (!mode && (doc.status || doc.daily.length || detail)) throw new Error('Unidentified mode data rejected');
   return mode;
 }
@@ -34,6 +36,19 @@ function stateFor(doc, now = Date.now()) {
 
 function card(label, value, detail = "") {
   return `<section class="card"><div class="lbl">${esc(label)}</div><div class="big">${value}</div><div class="sub">${detail}</div></section>`;
+}
+
+function netChangeCard(status) {
+  const item = status.pnl_breakdown || {};
+  const metric = (label, value) => `<div class="net-metric"><div class="net-label">${esc(label)}</div><div class="net-value" style="color:${color(value)}">${signed(value)}</div></div>`;
+  return `<section class="card full net-card"><div class="lbl">Net change since original capital</div>
+    <div class="net-triplet">
+      ${metric('Adverse fills', item.adverse_fills)}
+      ${metric('Reward farmed', item.reward_farmed)}
+      ${metric('Adverse fills + reward farmed', item.adverse_plus_reward)}
+    </div>
+    <div class="sub">${esc(item.note || 'Awaiting the live reward and marked-account breakdown.')}${item.reward_day ? ` · Reward day ${esc(item.reward_day)} UTC` : ''}</div>
+  </section>`;
 }
 
 function drawChart(rows, mode = 'LIVE') {
@@ -74,7 +89,7 @@ function render(doc) {
     <div class="grid">
       ${marketTable(state === 'STALE' ? null : doc.market_detail, Date.now(), mode)}
       ${card(dry ? "Simulated account equity" : "Marked account equity", money(status.equity), "Cash " + money(status.cash) + " · positions " + money(status.positions))}
-      ${card(dry ? "Simulated change since original capital" : "Net change since original capital", `<span style="color:${color(status.net_since_original)}">${signed(status.net_since_original)}</span>`, dry ? 'Simulation only; not actual profit or earned rewards.' : "Includes credited rewards and any external transfers; not flow-adjusted trading profit.")}
+      ${dry ? card("Simulated change since original capital", `<span style="color:${color(status.net_since_original)}">${signed(status.net_since_original)}</span>`, 'Simulation only; not actual profit or earned rewards.') : netChangeCard(status)}
       ${card("Capital hard-stop floor", money(status.capital_floor), "Original capital " + money(status.original_capital) + " · loss limit " + esc(settings.loss_limit_pct) + "%")}
       ${card("Distance above hard-stop floor", money(status.kill_cushion), "Stop latched: " + (status.latched === true ? "YES" : status.latched === false ? "no" : "—") + " · confirmation checks retained")}
       <section class="card full"><h2 class="section-title">${dry ? 'Simulated change over days' : 'P/L over days'} <span style="color:var(--muted);font-weight:400">/ ${esc(mode || 'no mode')} only</span></h2>
@@ -115,4 +130,4 @@ if (typeof document !== "undefined") {
   load(); setInterval(load, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 }
-if (typeof module !== "undefined") module.exports = {esc, stateFor, drawChart, money, signed, marketTable, validateMode, render, load};
+if (typeof module !== "undefined") module.exports = {esc, stateFor, drawChart, money, signed, marketTable, netChangeCard, validateMode, render, load};

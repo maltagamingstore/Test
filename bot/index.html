@@ -40,6 +40,13 @@
   .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
   .big{font-size:26px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
   .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:5px}
+  .net-card{padding:15px 16px}
+  .net-triplet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:4px 0 10px}
+  .net-metric{min-width:0;padding:7px 14px;border-left:1px solid var(--line)}
+  .net-metric:first-child{border-left:0;padding-left:0}
+  .net-metric:last-child{padding-right:0}
+  .net-label{min-height:2.5em;font-family:var(--mono);font-size:11px;line-height:1.25;color:var(--muted)}
+  .net-value{margin-top:5px;font-size:clamp(18px,4vw,27px);font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .pill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block}
   .pill.g{background:var(--good-bg);color:var(--good)} .pill.w{background:var(--warn-bg);color:var(--warn)}
   .pill.b{background:var(--bad-bg);color:var(--bad)} .pill.n{background:#1b2938;color:var(--muted)}
@@ -63,7 +70,7 @@
   .win{outline:1px solid var(--good)}
   .note{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:9px;text-align:center}
   .err{font-family:var(--mono);font-size:12px;color:var(--warn);text-align:center;padding:20px}
-.tablebox{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums} th,td{text-align:right;padding:12px 8px;border-bottom:1px solid var(--line);white-space:nowrap} th:first-child,td:first-child{text-align:left} th{color:var(--muted);font-weight:500} button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer} button[aria-pressed=true]{border-color:var(--accent)} .disclaimer{line-height:1.6;font-size:12px;color:var(--muted)} .section-title{font-size:14px;margin:0 0 14px} .full{grid-column:1/-1} a{color:var(--accent)} @media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.big{font-size:26px}}
+.tablebox{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums} th,td{text-align:right;padding:12px 8px;border-bottom:1px solid var(--line);white-space:nowrap} th:first-child,td:first-child{text-align:left} th{color:var(--muted);font-weight:500} button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer} button[aria-pressed=true]{border-color:var(--accent)} .disclaimer{line-height:1.6;font-size:12px;color:var(--muted)} .section-title{font-size:14px;margin:0 0 14px} .full{grid-column:1/-1} a{color:var(--accent)} @media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.big{font-size:26px}.net-card{padding:13px 12px}.net-metric{padding:6px 8px}.net-label{font-size:10px}.net-value{font-size:clamp(16px,5.2vw,22px)}}
 </style>
 </head>
 <body>

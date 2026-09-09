@@ -41,15 +41,16 @@ function card(label, value, detail = "") {
 }
 
 function netChangeCard(status) {
-  const item = status.pnl_breakdown || {};
+  const supplied = status.pnl_breakdown || {};
+  const item = supplied.horizon === 'today_utc' ? supplied : {note:'Awaiting today-only accounting; older lifetime totals are not substituted.'};
   const metric = (label, value) => `<div class="net-metric"><div class="net-label">${esc(label)}</div><div class="net-value" style="color:${color(value)}">${signed(value)}</div></div>`;
-  return `<section class="card full net-card"><div class="lbl">Net change since original capital</div>
+  return `<section class="card full net-card"><div class="lbl">Today’s net farming result · UTC</div>
     <div class="net-triplet">
       ${metric('Adverse fills', item.adverse_fills)}
       ${metric('Reward farmed', item.reward_farmed)}
       ${metric('Adverse fills + reward farmed', item.adverse_plus_reward)}
     </div>
-    <div class="sub">${esc(item.note || 'Awaiting the live reward and marked-account breakdown.')}${item.reward_day ? ` · Reward day ${esc(item.reward_day)} UTC` : ''}</div>
+    <div class="sub">${esc(item.note || 'Awaiting today’s reward and marked-account breakdown.')}${item.reward_day ? ` · Reward day ${esc(item.reward_day)} UTC` : ''}${item.baseline_observed_at ? ` · Trading observations since ${esc(new Date(item.baseline_observed_at).toISOString())}` : ''}</div>
   </section>`;
 }
 

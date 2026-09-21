@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "published_at": "2026-09-21T13:41:09.221330+00:00",
+  "published_at": "2026-09-21T14:00:39.861660+00:00",
   "next_sync_due": "2026-09-21T16:00:00+00:00",
   "next_evaluation_due": "2026-09-21T15:00:00+00:00",
   "sync_interval_hours": 6,
@@ -275,6 +275,7 @@
     ],
     "window_start": "2026-09-21T07:45:45.110002+00:00",
     "window_end": "2026-09-21T13:03:30.145896+00:00",
+    "common_starting_shares": 1350.0,
     "membership_markets": 5000,
     "quoted_markets": 3079,
     "episode_markets": 30,
@@ -444,5 +445,5 @@
   "publication_schedule": "00:00 · 06:00 · 12:00 · 18:00 Europe/Paris",
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
-  "source_digest": "b8b3211efea69247963e61c4c7d597396ea77e1a3302541b0e51bc6539e5bc47"
+  "source_digest": "6a8d3ff1499bcb0289f043279452b24330acefd6daae63296cc14d59b4626820"
 }

@@ -26,6 +26,9 @@
     if(doc.schema!==1||!Array.isArray(doc.results)||!Array.isArray(doc.synthetic))throw Error('Unsupported research summary');
     data=doc;$('stage').textContent=doc.state;$('tests').textContent=doc.tests.passed?doc.tests.count+' tests passed':'Needs revalidation';
     $('cohort').textContent=doc.results.length?'Policy comparisons available':'Not available yet';
+    const mutations=doc.mutations||[];
+    $('mutation-status').textContent=mutations.length+' rules · '+(doc.mutation_checks?.passed?'behavior tests passed':'verification pending');
+    $('mutation-list').innerHTML=mutations.map(r=>'<article class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">Awaiting recorded-data evaluation</span></article>').join('');
     const stamp=new Date(doc.published_at), age=Date.now()-stamp;
     if(!Number.isFinite(+stamp))throw Error('Missing sync timestamp');
     $('sync-time').textContent=(fallback?'Saved snapshot · ':'Last synced · ')+stamp.toLocaleString()+((age>7*3600000)?' · update overdue':'');

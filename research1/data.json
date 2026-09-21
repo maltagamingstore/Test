@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "published_at": "2026-09-21T09:45:40.135869+00:00",
-  "next_sync_due": "2026-09-21T15:45:40.135869+00:00",
+  "published_at": "2026-09-21T10:04:22.400122+00:00",
+  "next_sync_due": "2026-09-21T16:04:22.400122+00:00",
   "sync_interval_hours": 6,
-  "research_updated_at": "2026-09-21T09:28:04.729418+00:00",
+  "research_updated_at": "2026-09-21T10:04:18.442339+00:00",
   "state": "Building the recorded-data experiment",
   "tests": {
     "passed": true,
@@ -71,8 +71,154 @@
       "recovery_loss_per_share": 0.03
     }
   ],
+  "mutations": [
+    {
+      "id": "R001",
+      "name": "Quick reset",
+      "family": "fixed",
+      "description": "Hold 5 minutes, then exit.",
+      "deadline": 300
+    },
+    {
+      "id": "R002",
+      "name": "Short pause",
+      "family": "fixed",
+      "description": "Hold 15 minutes, then exit.",
+      "deadline": 900
+    },
+    {
+      "id": "R003",
+      "name": "Half-hour reset",
+      "family": "fixed",
+      "description": "Hold 30 minutes, then exit.",
+      "deadline": 1800
+    },
+    {
+      "id": "R004",
+      "name": "One-hour recovery window",
+      "family": "fixed",
+      "description": "Hold 1 hour, then exit.",
+      "deadline": 3600
+    },
+    {
+      "id": "R005",
+      "name": "Two-hour recovery window",
+      "family": "fixed",
+      "description": "Hold 2 hours, then exit.",
+      "deadline": 7200
+    },
+    {
+      "id": "R006",
+      "name": "Patient four-hour window",
+      "family": "fixed",
+      "description": "Hold 4 hours, then exit.",
+      "deadline": 14400
+    },
+    {
+      "id": "R007",
+      "name": "Extended six-hour window",
+      "family": "fixed",
+      "description": "Hold 6 hours, then exit.",
+      "deadline": 21600
+    },
+    {
+      "id": "R008",
+      "name": "Scratch after fees",
+      "family": "scratch",
+      "description": "Exit when the complete position can break even after fees; otherwise 6 hours.",
+      "deadline": 21600
+    },
+    {
+      "id": "R009",
+      "name": "Recover one quarter",
+      "family": "recovery",
+      "description": "Exit after recovering 25% of the immediate-exit loss; otherwise 4 hours.",
+      "deadline": 14400
+    },
+    {
+      "id": "R010",
+      "name": "Recover one half",
+      "family": "recovery",
+      "description": "Exit after recovering 50% of the immediate-exit loss; otherwise 4 hours.",
+      "deadline": 14400
+    },
+    {
+      "id": "R011",
+      "name": "Recover three quarters",
+      "family": "recovery",
+      "description": "Exit after recovering 75% of the immediate-exit loss; otherwise 6 hours.",
+      "deadline": 21600
+    },
+    {
+      "id": "R012",
+      "name": "Relax the recovery target",
+      "family": "relax",
+      "description": "Require 75% recovery in hour 1, 50% in hour 2, then 25%; exit by 4 hours.",
+      "deadline": 14400
+    },
+    {
+      "id": "R013",
+      "name": "Confirm the recovery",
+      "family": "confirm",
+      "description": "Require 50% recovery on at least 3 distinct books spanning 60 seconds; exit by 4 hours. Gaps reset confirmation.",
+      "deadline": 14400
+    },
+    {
+      "id": "R014",
+      "name": "Protect a rebound",
+      "family": "trail",
+      "description": "Arm after 50% recovery; exit if loss worsens from its best by 25% of initial loss. Exit by 6 hours.",
+      "deadline": 21600
+    },
+    {
+      "id": "R015",
+      "name": "Scratch or cut deterioration",
+      "family": "scratch_stop",
+      "description": "Exit at break-even or when loss reaches 150% of the immediate-exit loss; otherwise 2 hours.",
+      "deadline": 7200
+    },
+    {
+      "id": "R016",
+      "name": "Leave a stalled recovery",
+      "family": "stall",
+      "description": "Exit after 1 continuously observed hour without an improvement of at least 5% of initial loss; otherwise 4 hours. Gaps reset the stall clock.",
+      "deadline": 14400
+    },
+    {
+      "id": "R017",
+      "name": "Exit a fading rebound",
+      "family": "fade",
+      "description": "After 50% recovery, exit on 3 consecutive worsening fresh books; otherwise 4 hours. Gaps reset the sequence.",
+      "deadline": 14400
+    },
+    {
+      "id": "R018",
+      "name": "Halve risk, then recover",
+      "family": "half_recover",
+      "description": "Sell half immediately. Exit the rest when combined loss is at most 50% of the immediate-exit loss; otherwise 4 hours.",
+      "deadline": 14400
+    },
+    {
+      "id": "R019",
+      "name": "Four-step exit",
+      "family": "ladder",
+      "description": "Sell cumulative 25%, 50%, 75%, 100% at 15, 30, 60, 120 minutes, limited by available depth.",
+      "deadline": 7200
+    },
+    {
+      "id": "R020",
+      "name": "Cap the reward sacrifice",
+      "family": "reward_budget",
+      "description": "Exit after 50% recovery or when missed rewards reach 25% of the initial loss; otherwise 4 hours. Unknown rewards cannot trigger the budget rule.",
+      "deadline": 14400
+    }
+  ],
+  "mutation_checks": {
+    "passed": true,
+    "count": 48
+  },
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
   "example_gap_seconds": 3400.0,
-  "source_digest": "d657cb550340b72f137cf51c68592017ff23ec36392bb63f7186af7130834ecb"
+  "source_digest": "2ac24d16ea946704466ce94ce124ea111c9aa09b21e70a5eef7bebf89a99b984"
 }

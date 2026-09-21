@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "published_at": "2026-09-21T13:26:39.296546+00:00",
+  "published_at": "2026-09-21T13:41:09.221330+00:00",
   "next_sync_due": "2026-09-21T16:00:00+00:00",
   "next_evaluation_due": "2026-09-21T15:00:00+00:00",
   "sync_interval_hours": 6,
@@ -284,9 +284,9 @@
       "Observation window: 21 Sep 2026 07:45:45–13:03:30 UTC. Entry window: 07:47:11–08:27:46 UTC. All entries precede the prospective boundary; this is not the future three-day campaign.",
       "Dollars are estimated whole completed-lot trading losses, with immediate-exit loss on each row's identical fee-known paired subset. Rows may contain different episodes. Unresolved lots and their partial-exit cash flows are outside these totals; negative completed loss is not whole-cohort profit. Do not rank rows.",
       "Show completed/total episodes, paired completed count, unresolved episode count and remaining shares on every row. Shares span different contracts and are not a dollar risk estimate. Unknown values remain unknown, including R007's empty paired subset.",
-      "Missed rewards and total cost are unknown. Twenty variants were replayed; R020 is partial because its reward-budget trigger is untested. No winning rule, complete farming result or live-readiness conclusion is available.",
+      "Adverse-fill trading loss only: missed rewards are excluded by request. Twenty variants were replayed; R020 shows recovery/deadline behavior only, with its reward-budget trigger excluded. This does not establish a winning rule or live readiness.",
       "Entries use V4 base quotes at heterogeneous reward minimums and independently funded lots, with strict HTTP-through fills, frame-boundary immediate cancellation/repricing, omitted touches and dual crossings, and no repeated farming/shared-account lifecycle. Immediate exit means the first frame decision after the crossing, using earlier received books.",
-      "Startup fee schedules are fixed estimates without per-match rounding. Missing/stale paired books cancel candidate entries; held inventory persists through gaps. Data-off time is excluded from the missed-farming clock; that clock is not measured reward loss.",
+      "Startup fee schedules are fixed estimates without per-match rounding. Missing/stale paired books cancel candidate entries; held inventory persists through gaps.",
       "All normalized reports and controls were independently reproduced; raw entry generation was sampled at 3 of 30 entries. Original local/bank hashes match; transitive dependency continuity was checked afterward. Full raw selection/omission counts were not independently regenerated."
     ],
     "source_digest": "4ffc840ab9c8a58b583b429c000d49272a3ea7440eaa2e6e119001d64eb240a2",
@@ -444,5 +444,5 @@
   "publication_schedule": "00:00 · 06:00 · 12:00 · 18:00 Europe/Paris",
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
-  "source_digest": "d42aad63a30569be83e5b611db039495e1e675a05a6502d559d8a5e6f0a28b85"
+  "source_digest": "b8b3211efea69247963e61c4c7d597396ea77e1a3302541b0e51bc6539e5bc47"
 }

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "published_at": "2026-09-21T10:04:22.400122+00:00",
-  "next_sync_due": "2026-09-21T16:04:22.400122+00:00",
+  "published_at": "2026-09-21T10:12:59.682708+00:00",
+  "next_sync_due": "2026-09-21T16:12:59.682708+00:00",
   "sync_interval_hours": 6,
   "research_updated_at": "2026-09-21T10:04:18.442339+00:00",
   "state": "Building the recorded-data experiment",
@@ -17,60 +17,7 @@
     "Reconstruct comparable farmer episodes from retained evidence. Implement retrospective observed-action comparisons separately from causal decoded rules. No real farmer episode or decoded Kappa policy is claimed yet."
   ],
   "results": [],
-  "synthetic": [
-    {
-      "name": "fixed_1h_example",
-      "trading_loss": 1.0,
-      "missed_reward": 0.023148148148148147,
-      "total_cost": 1.0231481481481481,
-      "damage_remaining_pct": 50.0,
-      "damage_reduction_pct": 50.0,
-      "complete": true,
-      "remaining_shares": 0.0,
-      "exit_after_seconds": 3600.0,
-      "hold_seconds": 3600,
-      "recovery_loss_per_share": null
-    },
-    {
-      "name": "fixed_2h_example",
-      "trading_loss": 0.5700000000000007,
-      "missed_reward": 0.42824074074074076,
-      "total_cost": 0.9982407407407414,
-      "damage_remaining_pct": 28.500000000000036,
-      "damage_reduction_pct": 71.49999999999997,
-      "complete": true,
-      "remaining_shares": 0.0,
-      "exit_after_seconds": 7200.0,
-      "hold_seconds": 7200,
-      "recovery_loss_per_share": null
-    },
-    {
-      "name": "immediate_exit_v1",
-      "trading_loss": 2.0,
-      "missed_reward": 0.0,
-      "total_cost": 2.0,
-      "damage_remaining_pct": 100.0,
-      "damage_reduction_pct": 0.0,
-      "complete": true,
-      "remaining_shares": 0.0,
-      "exit_after_seconds": 0.0,
-      "hold_seconds": 0,
-      "recovery_loss_per_share": null
-    },
-    {
-      "name": "recovery_or_2h_example",
-      "trading_loss": 0.5700000000000007,
-      "missed_reward": 0.42824074074074076,
-      "total_cost": 0.9982407407407414,
-      "damage_remaining_pct": 28.500000000000036,
-      "damage_reduction_pct": 71.49999999999997,
-      "complete": true,
-      "remaining_shares": 0.0,
-      "exit_after_seconds": 7200.0,
-      "hold_seconds": 7200,
-      "recovery_loss_per_share": 0.03
-    }
-  ],
+  "data_kind": "recorded",
   "mutations": [
     {
       "id": "R001",
@@ -219,6 +166,5 @@
   },
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
-  "example_gap_seconds": 3400.0,
-  "source_digest": "2ac24d16ea946704466ce94ce124ea111c9aa09b21e70a5eef7bebf89a99b984"
+  "source_digest": "1042b918259c21004186c86f807889a5139a24d937cdb77e83835229afbe3594"
 }

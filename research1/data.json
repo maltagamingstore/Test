@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "published_at": "2026-09-21T09:40:44.945482+00:00",
+  "next_sync_due": "2026-09-21T15:40:44.945482+00:00",
+  "sync_interval_hours": 6,
+  "research_updated_at": "2026-09-21T09:28:04.729418+00:00",
+  "state": "Building the recorded-data experiment",
+  "tests": {
+    "passed": true,
+    "count": 21,
+    "source_current": true
+  },
+  "next_steps": [
+    "Build the chronological all-market account/input adapter. Join as-of token pairs, reward minima, spread/tick metadata, books and public prints. Generate entries from resting V4-style quotes. Track paired inventory, outstanding entry-order cancellation, additional fills, and resumption after flat. Preserve the full universe-to-usable-input funnel. Force-farming research uses independently funded exposures; final whole-bot replay uses the agreed shared capital budget.",
+    "Qualify fee calculation against recorded market schedules at each execution price. The older V4 replay explicitly used a zero-fee sensitivity assumption; that is not sufficient for net-loss results. Unknown fees must remain unknown.",
+    "Freeze a real recorded entry cohort and run a bounded actual-data canary, then longer matched experiments with complete and censored episodes visible. Final trajectory replay must allow downtime to change subsequent fills, rather than force identical later entries on all policies.",
+    "Reconstruct comparable farmer episodes from retained evidence. Implement retrospective observed-action comparisons separately from causal decoded rules. No real farmer episode or decoded Kappa policy is claimed yet."
+  ],
+  "results": [],
+  "synthetic": [
+    {
+      "name": "fixed_1h_example",
+      "trading_loss": 1.0,
+      "missed_reward": 0.023148148148148147,
+      "total_cost": 1.0231481481481481,
+      "damage_remaining_pct": 50.0,
+      "damage_reduction_pct": 50.0,
+      "complete": true,
+      "remaining_shares": 0.0
+    },
+    {
+      "name": "fixed_2h_example",
+      "trading_loss": 0.5700000000000007,
+      "missed_reward": 0.42824074074074076,
+      "total_cost": 0.9982407407407414,
+      "damage_remaining_pct": 28.500000000000036,
+      "damage_reduction_pct": 71.49999999999997,
+      "complete": true,
+      "remaining_shares": 0.0
+    },
+    {
+      "name": "immediate_exit_v1",
+      "trading_loss": 2.0,
+      "missed_reward": 0.0,
+      "total_cost": 2.0,
+      "damage_remaining_pct": 100.0,
+      "damage_reduction_pct": 0.0,
+      "complete": true,
+      "remaining_shares": 0.0
+    },
+    {
+      "name": "recovery_or_2h_example",
+      "trading_loss": 0.5700000000000007,
+      "missed_reward": 0.42824074074074076,
+      "total_cost": 0.9982407407407414,
+      "damage_remaining_pct": 28.500000000000036,
+      "damage_reduction_pct": 71.49999999999997,
+      "complete": true,
+      "remaining_shares": 0.0
+    }
+  ],
+  "baseline": "Immediate exit",
+  "trigger": "Every farming fill leaving unpaired inventory",
+  "example_gap_seconds": 3400.0,
+  "source_digest": "06516a7b7881c6bc6b6a2009adedc30ccec4efd85fad3767a86922bcd341aca4"
+}

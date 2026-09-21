@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "published_at": "2026-09-21T09:40:44.945482+00:00",
-  "next_sync_due": "2026-09-21T15:40:44.945482+00:00",
+  "published_at": "2026-09-21T09:45:40.135869+00:00",
+  "next_sync_due": "2026-09-21T15:45:40.135869+00:00",
   "sync_interval_hours": 6,
   "research_updated_at": "2026-09-21T09:28:04.729418+00:00",
   "state": "Building the recorded-data experiment",
@@ -26,7 +26,10 @@
       "damage_remaining_pct": 50.0,
       "damage_reduction_pct": 50.0,
       "complete": true,
-      "remaining_shares": 0.0
+      "remaining_shares": 0.0,
+      "exit_after_seconds": 3600.0,
+      "hold_seconds": 3600,
+      "recovery_loss_per_share": null
     },
     {
       "name": "fixed_2h_example",
@@ -36,7 +39,10 @@
       "damage_remaining_pct": 28.500000000000036,
       "damage_reduction_pct": 71.49999999999997,
       "complete": true,
-      "remaining_shares": 0.0
+      "remaining_shares": 0.0,
+      "exit_after_seconds": 7200.0,
+      "hold_seconds": 7200,
+      "recovery_loss_per_share": null
     },
     {
       "name": "immediate_exit_v1",
@@ -46,7 +52,10 @@
       "damage_remaining_pct": 100.0,
       "damage_reduction_pct": 0.0,
       "complete": true,
-      "remaining_shares": 0.0
+      "remaining_shares": 0.0,
+      "exit_after_seconds": 0.0,
+      "hold_seconds": 0,
+      "recovery_loss_per_share": null
     },
     {
       "name": "recovery_or_2h_example",
@@ -56,11 +65,14 @@
       "damage_remaining_pct": 28.500000000000036,
       "damage_reduction_pct": 71.49999999999997,
       "complete": true,
-      "remaining_shares": 0.0
+      "remaining_shares": 0.0,
+      "exit_after_seconds": 7200.0,
+      "hold_seconds": 7200,
+      "recovery_loss_per_share": 0.03
     }
   ],
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
   "example_gap_seconds": 3400.0,
-  "source_digest": "06516a7b7881c6bc6b6a2009adedc30ccec4efd85fad3767a86922bcd341aca4"
+  "source_digest": "d657cb550340b72f137cf51c68592017ff23ec36392bb63f7186af7130834ecb"
 }

@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const FEED='https://gist.githubusercontent.com/maltagamingstore/7f02dc27888b5de7ad0e7290128a4fe6/raw/research1.json';
+  const LOCAL_PREVIEW=['127.0.0.1','localhost','[::1]'].includes(location.hostname)&&new URLSearchParams(location.search).get('preview')==='local';
   const $=id=>document.getElementById(id);
   const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=n=>typeof n==='number'&&Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n):'—';
@@ -12,6 +13,32 @@
     return x===y?0:x-y;
   };
   let data=null;
+  let managementSort='score';
+  let maxOpenHours='';
+  const finite=n=>typeof n==='number'&&Number.isFinite(n);
+  function managementScores(){
+    const target=$('management-score'), score=data?.preliminary?.management_score;
+    if(!target)return;
+    if(score?.status!=='reviewed'){
+      target.innerHTML='<p class="footnote">Holding-time scores are being calculated and checked on this exact recorded batch. The completed-loss comparison above is available now.</p>';
+      return;
+    }
+    const limit=maxOpenHours.trim()===''?null:Number(maxOpenHours);
+    const rows=score.rows.filter(r=>limit===null||!Number.isFinite(limit)||limit<0||r.oldest_open_hours<=limit).sort((a,b)=>{
+      const field=managementSort==='score'?'savings_per_episode_hour':'oldest_open_hours';
+      const x=finite(a[field])?a[field]:-Infinity, y=finite(b[field])?b[field]:-Infinity;
+      return x===y?a.name.localeCompare(b.name):y-x;
+    });
+    const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
+    const hours=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';
+    const rate=n=>finite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:3,maximumFractionDigits:3}).format(n):'—';
+    const status=r=>r.status==='zero_episode_hours'?'No elapsed holding time':r.status==='no_comparable_completed'?'No realized benefit measured yet':r.status==='incomplete_unpaired_completed'?'Incomplete dollar comparison':r.realized_savings_usd<0?'More loss than immediate exit':r.open_episodes>0?'Open inventory remains':'All episodes flat';
+    target.innerHTML='<div class="score-controls"><label for="management-sort">Order by </label><select id="management-sort"><option value="score"'+(managementSort==='score'?' selected':'')+'>Savings per episode-hour · highest first</option><option value="oldest"'+(managementSort==='oldest'?' selected':'')+'>Oldest open fill · longest first</option></select></div><div class="table-scroll"><table><thead><tr><th>Rule</th><th>Realized $ saved*</th><th>All episode-hours held</th><th>$/episode-hour*</th><th>Open / common episodes</th><th>Oldest open fill</th><th>Inventory status</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+escape(label(r.name))+'</td><td>'+money(r.realized_savings_usd)+'</td><td>'+hours(r.episode_hours)+'</td><td>'+rate(r.savings_per_episode_hour)+'</td><td>'+r.open_episodes+' / '+data.preliminary.episodes+'</td><td>'+hours(r.oldest_open_hours)+' h</td><td>'+escape(status(r))+'<br><small>'+hours(r.remaining_shares)+' shares held</small></td></tr>').join('')+'</tbody></table></div><p class="footnote">* Realized savings = immediate-exit loss minus rule loss on the same fully closed, fee-known episodes. Every common episode contributes holding time, including unfinished fills and recording gaps. Partial exits earn no savings credit until the episode is fully flat. Overlapping fills add separate episode-hours: this is not elapsed bot time or capital-weighted time. Unknown comparisons and zero-hour rates remain unscored. Negative savings mean extra loss; longer waits can move a negative rate toward zero, so the rate alone cannot eliminate rules. Open inventory is not valued in realized savings. No holding-time cutoff has been imposed. Missed rewards remain excluded.</p>';
+    $('management-sort').onchange=event=>{managementSort=event.target.value;managementScores();};
+    const controls=target.querySelector('.score-controls');
+    controls.insertAdjacentHTML('beforeend','<label for="management-max-hours"> Maximum oldest-open age (hours) </label><input id="management-max-hours" type="number" min="0" step="0.25" placeholder="No cutoff" value="'+escape(maxOpenHours)+'"><span> Showing '+rows.length+' of '+score.rows.length+' rules. This filter only changes the view.</span>');
+    $('management-max-hours').onchange=event=>{maxOpenHours=event.target.value;managementScores();};
+  }
   function comparisons(){
     if(!data)return;
     const rows=[...data.results].sort(byLoss);
@@ -31,21 +58,28 @@
     $('cohort').textContent=doc.results.length?'Policy comparisons available':doc.preliminary?'Preliminary · '+(doc.preliminary.episodes??doc.preliminary.episode_markets)+' episodes':'Not available yet';
     const mutations=doc.mutations||[];
     $('mutation-status').textContent=mutations.length+' rules · '+(doc.mutation_checks?.passed?'behavior tests passed':'verification pending');
-    $('mutation-list').innerHTML=mutations.map(r=>'<article class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">'+(doc.preliminary?(r.id==='R020'?'Recovery/deadline check · reward trigger excluded':(doc.preliminary.kind==='three_hour_batch'?'Recorded batch result available':'Recorded snapshot check available')):'Data available · replay integration unfinished')+'</span></article>').join('');
+    $('mutation-list').innerHTML=mutations.map(r=>'<li class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">'+(doc.preliminary?(r.id==='R020'?'Recovery/deadline check · reward trigger excluded':(doc.preliminary.kind==='three_hour_batch'?'Recorded batch result available':'Recorded snapshot check available')):'Data available · replay integration unfinished')+'</span></li>').join('');
     const stamp=new Date(doc.published_at), age=Date.now()-stamp;
     if(!Number.isFinite(+stamp))throw Error('Missing sync timestamp');
-    $('sync-time').textContent=(fallback?'Saved snapshot · ':'Last synced · ')+stamp.toLocaleString()+((age>7*3600000)?' · update overdue':'');
+    $('sync-time').textContent=(LOCAL_PREVIEW?'Local preview · not uploaded · ':fallback?'Saved snapshot · ':'Last synced · ')+stamp.toLocaleString()+((age>7*3600000)?' · update overdue':'');
     $('sync-time').classList.toggle('stale',fallback||age>7*3600000);
     $('updated').textContent='Research updated '+new Date(doc.research_updated_at).toLocaleDateString();
     $('next-steps').innerHTML=doc.next_steps.map(s=>'<li>'+escape(s)+'</li>').join('')||'<li>No pending steps in the published summary.</li>';
     comparisons();
+    managementScores();
   }
   async function refresh(){
     $('refresh').disabled=true;$('load-error').hidden=true;
     try{
       let doc,fallback=false;
+      if(LOCAL_PREVIEW){
+        const r=await fetch('./data.json?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(15000)});
+        if(!r.ok)throw Error('Local preview unavailable');
+        doc=await r.json();
+      }else{
       try{const r=await fetch(FEED+'?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('Feed unavailable');doc=await r.json();}
       catch{const r=await fetch('./data.json',{cache:'no-store'});if(!r.ok)throw Error('Summary unavailable');doc=await r.json();fallback=true;}
+      }
       render(doc,fallback);
     }catch{$('load-error').hidden=false;$('load-error').textContent='The research summary could not be refreshed. Any displayed data is the last loaded snapshot.';}
     finally{$('refresh').disabled=false;}

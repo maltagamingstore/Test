@@ -15,10 +15,44 @@
   let data=null;
   let managementSort='score';
   let maxOpenHours='';
+  let rewardDay='';
+  let horizonSort='score';
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
+  const range=(low,high)=>!finite(low)||!finite(high)?'Unknown':Math.abs(low-high)<.005?money(low):money(low)+' to '+money(high);
+  function sixHourComparison(){
+    const p=data?.preliminary,s=p?.six_hour_score;
+    if(s?.status!=='reviewed')return false;
+    const daily=rewardDay.trim()===''?null:Number(rewardDay);
+    const hasRate=finite(daily)&&daily>=0;
+    const base=s.rows.find(r=>r.name==='immediate_exit_v1');
+    const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
+    const hours=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'—';
+    const scored=s.rows.map(r=>{
+      const penalty=hasRate?daily*r.extra_farming_hours/24:null;
+      return {...r,penalty,low:finite(r.saved_low)?r.saved_low-(penalty??0):null,high:finite(r.saved_high)?r.saved_high-(penalty??0):null};
+    }).sort((a,b)=>{
+      const key=horizonSort==='loss'?'loss_high':horizonSort==='hours'?'extra_farming_hours':'low';
+      if(!finite(a[key]))return finite(b[key])?1:a.name.localeCompare(b.name);
+      if(!finite(b[key]))return -1;
+      return (horizonSort==='score'?b[key]-a[key]:a[key]-b[key])||a.name.localeCompare(b.name);
+    });
+    $('comparison').innerHTML='<div class="sample-banner"><strong>Same '+s.episodes+' simulated fills · six hours after each fill</strong><p>'+s.episode_markets+' recorded markets · '+hours(s.common_starting_shares)+' common starting shares per rule.</p><p>Immediate-exit control: <strong>'+range(base.loss_low,base.loss_high)+'</strong> on this entire same cohort. Control savings = $0.</p><p>Entry window: '+escape(new Date(s.entry_window_start).toLocaleString())+' → '+escape(new Date(s.entry_window_end).toLocaleString())+'. Every fill receives six hours of follow-up; later recorded inputs are included.</p></div>'+
+      '<div class="score-controls"><label for="reward-day">Reward assumption: $ per day for one market allocation </label><input id="reward-day" type="number" min="0" step="0.01" placeholder="Not set" value="'+escape(rewardDay)+'"><label for="horizon-sort"> Order by </label><select id="horizon-sort"><option value="score"'+(horizonSort==='score'?' selected':'')+'>Conservative '+(hasRate?'net':'trading')+' savings · highest first</option><option value="loss"'+(horizonSort==='loss'?' selected':'')+'>Conservative trading loss · lowest first</option><option value="hours"'+(horizonSort==='hours'?' selected':'')+'>Extra farming hours · lowest first</option></select></div>'+
+      '<p class="footnote">'+(hasRate?'Scenario only: '+money(daily)+'/day per market allocation. Net saved = control loss − rule loss − '+money(daily)+' × extra farming hours ÷ 24. This is not a measured reward rate.':'Reward assumption not set: ordering uses trading-loss bounds only. Reward-adjusted savings remain unknown. Enter a daily assumption to include the cost of waiting.')+'</p>'+
+      '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>'+ (hasRate?'Net saved vs control':'Trading saved vs control')+'</th><th>Trading loss incl. open inventory</th><th>Extra reward cost · scenario</th><th>Extra farming hours lost vs control</th><th>Flat at 6h / all fills</th><th>Shares still held at 6h</th><th>Unpriced shares</th></tr></thead><tbody>'+scored.map(r=>'<tr><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Recovery/deadline only; reward trigger excluded</small>':'')+'</td><td><strong>'+range(r.low,r.high)+'</strong></td><td>'+range(r.loss_low,r.loss_high)+'</td><td>'+money(r.penalty)+'</td><td>'+hours(r.extra_farming_hours)+' h</td><td>'+r.completed+' / '+r.episodes+'</td><td>'+hours(r.remaining_shares)+'</td><td>'+hours(r.unpriced_shares)+'<br><small>'+r.unpriced_episodes+' fills without a complete mark</small></td></tr>').join('')+'</tbody></table></div>'+
+      '<p class="footnote">Every row includes all common fills, partial sales, estimated fees and residual inventory. Open shares use fresh recorded executable depth remaining after that rule’s sales. Where depth is missing, the range allows $0–$1 net recovery per unpriced share; it is not a fabricated exit. Conservative ordering uses the lower savings bound (or upper loss bound). Overlapping ranges do not establish a winner. Six hours is a reporting cutoff, not a new forced-sale rule. A six-hour hold can still be open here because its first executable observation after the deadline is outside this window.</p><p class="footnote">Farming hours count only periods when the frozen V4 quote logic could quote from fresh two-sided recorded books. Recording gaps contribute no reward cost. Farming on that market stays paused until fully flat. Each fill is a separate simulation; holding hours from overlapping fills are added. These are preliminary handling comparisons, not a shared-capital bot profit estimate.</p>'+
+      '<details class="comparison-extra"><summary>Earlier cumulative results · completed-only subsets and their matching control</summary><p>These are the original '+p.episodes+'-fill results at the common recording cutoff, not the six-hour score. Each completed subset can differ. The matching control column below is extra diagnostic information.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>Completed / all</th><th>Paired completed</th><th>Completed loss only</th><th>Immediate exit on that completed subset</th><th>Shares still held at recording cutoff</th></tr></thead><tbody>'+[...p.rows].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>'<tr><td>'+escape(label(r.name))+'</td><td>'+r.completed+' / '+r.episodes+'</td><td>'+r.paired_completed+'</td><td>'+money(r.trading_loss)+'</td><td>'+money(r.paired_control_loss)+'</td><td>'+hours(r.remaining_shares)+'</td></tr>').join('')+'</tbody></table></div></details>';
+    $('reward-day').onchange=e=>{rewardDay=e.target.value;sixHourComparison();};
+    $('horizon-sort').onchange=e=>{horizonSort=e.target.value;sixHourComparison();};
+    return true;
+  }
   function managementScores(){
     const target=$('management-score'), score=data?.preliminary?.management_score;
     if(!target)return;
+    if(data?.preliminary?.six_hour_score?.status==='reviewed'){
+      $('management').hidden=true;return;
+    }
+    $('management').hidden=false;
     if(score?.status!=='reviewed'){
       target.innerHTML='<p class="footnote">Holding-time scores are being calculated and checked on this exact recorded batch. The completed-loss comparison above is available now.</p>';
       return;
@@ -41,6 +75,7 @@
   }
   function comparisons(){
     if(!data)return;
+    if(sixHourComparison())return;
     const rows=[...data.results].sort(byLoss);
     if(!rows.length && data.preliminary){
       const p=data.preliminary, label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));

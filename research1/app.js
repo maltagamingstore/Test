@@ -19,6 +19,18 @@
   let horizonSort='score';
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
   const range=(low,high)=>!finite(low)||!finite(high)?'Unknown':Math.abs(low-high)<.005?money(low):money(low)+' to '+money(high);
+  function recordingCloseout(){
+    const section=$('recording-closeout'),s=data?.preliminary?.end_of_data_closeout;
+    if(!section)return;
+    section.hidden=s?.status!=='reviewed';if(section.hidden)return;
+    const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
+    const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
+    const base=s.rows.find(r=>r.name==='immediate_exit_v1');
+    $('closeout-table').innerHTML='<div class="sample-banner"><strong>Same '+s.episodes+' simulated fills · continued to the end of the recording</strong><p>Existing website entry cohort only; later new fills are outside this closeout.</p><p>'+count(s.common_starting_shares)+' common starting shares per rule. Immediate-exit control: <strong>'+money(base.trading_loss)+'</strong> on all these same fills.</p><p>Final recorded market event: '+escape(new Date(s.window_end).toLocaleString())+'.</p></div>'+
+      '<p>Every rule ran chronologically through the remaining recorded inputs. Any shares still held are then assumed sold at their market’s last recorded positive bid, including estimated fees from known recorded schedules. These final sales are assumptions, not observed executions.</p>'+
+      '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>Loss incl. assumed final liquidation · lowest first</th><th>Saved vs common control</th><th>Simulated normal exits / all fills</th><th>Assumed exits / shares</th><th>Total holding hours</th><th>Saved per holding hour</th><th>Unknown outcomes</th></tr></thead><tbody>'+[...s.rows].sort(byLoss).map(r=>'<tr><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Recovery/deadline only; reward trigger excluded</small>':'')+'</td><td><strong>'+money(r.trading_loss)+'</strong></td><td>'+money(r.saved_vs_control)+'</td><td>'+r.normal_completed+' / '+r.episodes+'</td><td>'+r.assumed_episodes+' / '+count(r.assumed_shares)+'</td><td>'+count(r.held_hours)+' h</td><td>'+money(r.savings_per_held_hour)+'</td><td>'+r.unknown_episodes+' fills<br><small>'+count(r.unpriced_shares)+' unpriced shares</small></td></tr>').join('')+'</tbody></table></div>'+
+      '<p class="footnote">The last bid can be stale. Quote times are collector receipt times; exchange data may be older, and a later empty book does not erase an earlier positive bid in this assumption. This assumption sells the entire remaining quantity without a displayed-depth limit; it does not prove an executable price at the cutoff. Unknown fees or missing prices remain unknown. No fills or rewards are generated during recording gaps. Holding hours include gaps and sum separate fill episodes, so they are not elapsed bot time or measured missed rewards. Immediate exit has zero modeled holding time; its savings per hour is undefined. Zero unknown outcomes means the scenario inputs are present, not that actual execution is proven. The table below preserves the separate six-hour comparison and reward-cost scenario. Neither table establishes a live-trading winner.</p>';
+  }
   function sixHourComparison(){
     const p=data?.preliminary,s=p?.six_hour_score;
     if(s?.status!=='reviewed')return false;
@@ -101,6 +113,7 @@
     $('updated').textContent='Research updated '+new Date(doc.research_updated_at).toLocaleDateString();
     $('next-steps').innerHTML=doc.next_steps.map(s=>'<li>'+escape(s)+'</li>').join('')||'<li>No pending steps in the published summary.</li>';
     comparisons();
+    recordingCloseout();
     managementScores();
   }
   async function refresh(){

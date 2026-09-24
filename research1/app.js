@@ -17,8 +17,31 @@
   let maxOpenHours='';
   let rewardDay='';
   let horizonSort='score';
+  let finalSort='loss';
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
   const range=(low,high)=>!finite(low)||!finite(high)?'Unknown':Math.abs(low-high)<.005?money(low):money(low)+' to '+money(high);
+  function finalBatchReport(){
+    const section=$('final-batch'),s=data?.final_batch;
+    if(!section)return;
+    section.hidden=s?.status!=='reviewed';if(section.hidden)return;
+    const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
+    const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
+    const base=s.rows.find(r=>r.name==='immediate_exit_v1');
+    const rows=[...s.rows].sort((a,b)=>{
+      if(finalSort==='loss')return byLoss(a,b);
+      const field=finalSort==='hour'?'savings_per_held_hour':'held_hours';
+      if(!finite(a[field]))return finite(b[field])?1:a.name.localeCompare(b.name);
+      if(!finite(b[field]))return -1;
+      return (finalSort==='hour'?b[field]-a[field]:a[field]-b[field])||a.name.localeCompare(b.name);
+    });
+    $('final-table').innerHTML='<div class="sample-banner"><strong>Closed recording · '+s.episodes+' common fills · '+s.episode_markets+' recorded markets</strong><p>'+escape(new Date(s.recording_start).toLocaleString())+' → '+escape(new Date(s.window_end).toLocaleString())+'</p><p>'+count(s.common_starting_shares)+' identical starting shares per rule. Common immediate-exit loss: <strong>'+money(base.trading_loss)+'</strong>.</p></div>'+
+      '<p>All qualifying fills generated during this recording have been processed chronologically to its end. Earlier recording entries are excluded from this table. Residual shares are included through the agreed assumed sale at the last positive recorded bid, with recorded fee estimates.</p>'+
+      '<ul>'+s.conclusions.map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul>'+
+      '<div class="score-controls"><label for="final-sort">Order by </label><select id="final-sort"><option value="loss"'+(finalSort==='loss'?' selected':'')+'>Total loss · lowest first</option><option value="hour"'+(finalSort==='hour'?' selected':'')+'>Saved per holding hour · highest first</option><option value="hours"'+(finalSort==='hours'?' selected':'')+'>Holding hours · lowest first</option></select></div>'+
+      '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>Loss incl. final inventory</th><th>Saved vs same control</th><th>Normal / assumed closes</th><th>Holding lot-hours</th><th>Saved per holding hour</th><th>Unknown outcomes</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Reward trigger excluded; same effective rule as R010</small>':'')+'</td><td><strong>'+money(r.trading_loss)+'</strong></td><td>'+money(r.saved_vs_control)+'</td><td>'+r.normal_completed+' / '+r.assumed_episodes+'<br><small>'+count(r.assumed_shares)+' shares in assumed sales</small></td><td>'+count(r.held_hours)+' h</td><td>'+money(r.savings_per_held_hour)+'</td><td>'+r.unknown_episodes+'<br><small>'+count(r.unpriced_shares)+' unpriced shares</small></td></tr>').join('')+'</tbody></table></div>'+
+      '<p class="footnote">The same complete cohort is used for every row. Last-positive-bid sales are accounting assumptions: historical quotes may be stale and may lack enough executable size. A later empty or zero-bid update does not erase an earlier positive quote in this convention. Late fills have shorter follow-up to the common recording end; this is not an equal-age six-hour test. Holding hours sum independent fills, include gaps and can exceed the recording duration. Saved per hour is not measured lost rewards, capital efficiency or bot ROI. Unknown fees/prices remain unknown. The original 391-entry reports below are separate historical results and must not be added to this batch.</p>';
+    $('final-sort').onchange=e=>{finalSort=e.target.value;finalBatchReport();};
+  }
   function recordingCloseout(){
     const section=$('recording-closeout'),s=data?.preliminary?.end_of_data_closeout;
     if(!section)return;
@@ -102,7 +125,7 @@
   function render(doc,fallback=false){
     if(doc.schema!==1||!Array.isArray(doc.results)||doc.data_kind!=='recorded')throw Error('Unsupported research summary');
     data=doc;$('stage').textContent=doc.state;$('tests').textContent=doc.tests.passed?doc.tests.count+' tests passed':'Needs revalidation';
-    $('cohort').textContent=doc.results.length?'Policy comparisons available':doc.preliminary?'Preliminary · '+(doc.preliminary.episodes??doc.preliminary.episode_markets)+' episodes':'Not available yet';
+    $('cohort').textContent=doc.final_batch?.status==='reviewed'?'Closed recording · '+doc.final_batch.episodes+' episodes':doc.results.length?'Policy comparisons available':doc.preliminary?'Preliminary · '+(doc.preliminary.episodes??doc.preliminary.episode_markets)+' episodes':'Not available yet';
     const mutations=doc.mutations||[];
     $('mutation-status').textContent=mutations.length+' rules · '+(doc.mutation_checks?.passed?'behavior tests passed':'verification pending');
     $('mutation-list').innerHTML=mutations.map(r=>'<li class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">'+(doc.preliminary?(r.id==='R020'?'Recovery/deadline check · reward trigger excluded':(doc.preliminary.kind==='three_hour_batch'?'Recorded batch result available':'Recorded snapshot check available')):'Data available · replay integration unfinished')+'</span></li>').join('');
@@ -113,6 +136,7 @@
     $('updated').textContent='Research updated '+new Date(doc.research_updated_at).toLocaleDateString();
     $('next-steps').innerHTML=doc.next_steps.map(s=>'<li>'+escape(s)+'</li>').join('')||'<li>No pending steps in the published summary.</li>';
     comparisons();
+    finalBatchReport();
     recordingCloseout();
     managementScores();
   }

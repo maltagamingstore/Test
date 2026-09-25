@@ -14,3 +14,12 @@
 .bar-track{position:relative;height:19px;background:linear-gradient(90deg,transparent 49.7%,#6e7890 50%,transparent 50.3%)}
 .bar{position:absolute;height:13px;top:3px;border-radius:2px;min-width:0}.negative-bar{background:#c76b75}.positive-bar{background:#66bd9b}.control-bar{background:#7ba7ec}
 @media(max-width:900px){.comparison-charts{grid-template-columns:1fr}.rule-chart figcaption p{min-height:0}}
+
+.pnl-controls{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+.pnl-controls select{max-width:100%;padding:.6rem;background:#11242c;color:#e4edf0;border:1px solid #37505a;border-radius:.4rem}
+[data-plot] svg{display:block;width:100%;height:auto;min-height:180px;background:#0b1b22;border-radius:.6rem}
+.pnl-legend{display:flex;flex-wrap:wrap;gap:.6rem 1rem;margin:1rem 0;font-size:.85rem}
+.pnl-legend label{display:inline-flex;align-items:center;gap:.3rem;cursor:pointer;padding:.3rem}
+.pnl-time{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin:1.25rem 0}
+.pnl-time input{min-width:180px;flex:1;accent-color:#6ceac4}
+@media(max-width:600px){[data-plot]{overflow-x:auto}[data-plot] svg{min-width:700px}.pnl-controls label{max-width:100%}}

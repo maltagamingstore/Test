@@ -14,6 +14,21 @@
   let data=null;
   let finalSort='loss';
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
+  function comparisonCharts(s,label){
+    const rows=[...s.rows].sort(byLoss);
+    function plot(title,field,explanation){
+      const values=rows.map(r=>field(r));
+      const scale=Math.max(0.01,...values.filter(finite).map(Math.abs));
+      return '<figure class="rule-chart"><figcaption><h3>'+title+'</h3><p>'+explanation+'</p></figcaption><div class="chart-axis"><span>−'+money(scale)+'</span><span>0</span><span>+'+money(scale)+'</span></div>'+rows.map((r,i)=>{
+        const v=values[i],width=finite(v)?Math.abs(v)/scale*50:0;
+        const style=finite(v)?'left:'+(v<0?50-width:50)+'%;width:'+width+'%':'';
+        return '<div class="chart-row" title="'+escape(label(r.name))+': '+escape(money(v))+'"><span class="chart-label">'+escape(r.name==='immediate_exit_v1'?'Immediate exit':r.name)+'</span><div class="bar-track"><i class="bar '+(r.name==='immediate_exit_v1'?'control-bar':v<0?'negative-bar':'positive-bar')+'" style="'+style+'"></i></div><strong>'+money(v)+'</strong></div>';
+      }).join('')+'</figure>';
+    }
+    $('final-charts').innerHTML='<p class="footnote">Final closed Research 1 only: '+s.episodes+' common fills. These are endpoint comparisons, not an intraday equity curve or a funded bot return. Rewards are excluded; recorded fee estimates and assumed final inventory sales are included.</p><div class="comparison-charts">'+
+      plot('Final trading P/L',r=>finite(r.trading_loss)?-r.trading_loss:null,'Negative means a trading loss. Closer to zero is better. Every bar uses the same common cohort.')+
+      plot('Saved per holding lot-hour',r=>r.savings_per_held_hour,'Positive beats immediate exit; negative is worse. Missing or undefined values stay unranked.')+'</div>';
+  }
   function finalBatchReport(){
     const section=$('final-batch'),s=data?.final_batch;
     if(!section)return;
@@ -21,6 +36,7 @@
     const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
     const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
     const base=s.rows.find(r=>r.name==='immediate_exit_v1');
+    comparisonCharts(s,label);
     const rows=[...s.rows].sort((a,b)=>{
       if(finalSort==='loss')return byLoss(a,b);
       const field=finalSort==='hour'?'savings_per_held_hour':'held_hours';

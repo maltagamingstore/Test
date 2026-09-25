@@ -4,3 +4,13 @@
 .score-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}.score-controls input{font:inherit;width:110px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}.score-controls>span{font-size:12px;width:100%}
 
 #comparison .table-scroll th{white-space:normal;min-width:120px;max-width:180px}#comparison .table-scroll th:first-child,#comparison .table-scroll td:first-child{position:sticky;left:0;z-index:1;white-space:normal;min-width:150px;max-width:210px;background:var(--panel)}#comparison .table-scroll th:first-child{z-index:2}.comparison-extra{margin-top:20px}.comparison-extra summary{cursor:pointer;color:var(--muted);padding:12px 0}
+/* Endpoint comparisons use one shared zero and scale per metric. */
+.comparison-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:24px 0}
+.rule-chart{margin:0;padding:18px;border:1px solid #2c3545;border-radius:10px;min-width:0}
+.rule-chart h3{margin:0 0 8px}.rule-chart figcaption p{font-size:13px;color:#9caac1;min-height:48px}
+.chart-axis{display:flex;justify-content:space-between;margin:12px 82px 12px 95px;color:#9caac1;font-size:11px}
+.chart-row{display:grid;grid-template-columns:87px minmax(60px,1fr) 78px;align-items:center;gap:8px;min-height:29px;font-size:12px}
+.chart-label{white-space:nowrap}.chart-row strong{text-align:right;font-variant-numeric:tabular-nums;font-size:11px}
+.bar-track{position:relative;height:19px;background:linear-gradient(90deg,transparent 49.7%,#6e7890 50%,transparent 50.3%)}
+.bar{position:absolute;height:13px;top:3px;border-radius:2px;min-width:0}.negative-bar{background:#c76b75}.positive-bar{background:#66bd9b}.control-bar{background:#7ba7ec}
+@media(max-width:900px){.comparison-charts{grid-template-columns:1fr}.rule-chart figcaption p{min-height:0}}

@@ -98,16 +98,6 @@
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
   const rateMoney=n=>finite(n)?n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:Math.abs(n)>0&&Math.abs(n)<0.01?4:2}):'Unknown';
   function comparisonCharts(s,label){
-    if(s.pnl_history?.status==='reviewed'){
-      $('final-charts').innerHTML='<h3>Trading P/L over recorded time</h3><p class="footnote">'+escape(s.label||'Research2')+' · independent common-entry lots. This includes open inventory and estimated fees; it is not shared-capital bot equity.</p><div id="pnl-history-chart"></div>';
-      const labels=Object.fromEntries(s.rows.map(r=>[r.name,label(r.name)]));
-      window.ResearchPnlChart.mount($('pnl-history-chart'),s.pnl_history,labels);
-      return;
-    }
-    if(s.valuation_version==='v2'){
-      $('final-charts').innerHTML='<p class="footnote">The reviewed chronological P/L series is unavailable. Remaining shares marked at the last recorded trade are UNSOLD; their valuation is not sale proceeds.</p>';
-      return;
-    }
     const rows=[...s.rows].sort(byLoss);
     function plot(title,field,explanation){
       const values=rows.map(r=>field(r));
@@ -118,17 +108,17 @@
         return '<div class="chart-row" title="'+escape(label(r.name))+': '+escape(money(v))+'"><span class="chart-label">'+escape(r.name==='immediate_exit_v1'?'Immediate exit':r.name)+'</span><div class="bar-track"><i class="bar '+(r.name==='immediate_exit_v1'?'control-bar':v<0?'negative-bar':'positive-bar')+'" style="'+style+'"></i></div><strong>'+money(v)+'</strong></div>';
       }).join('')+'</figure>';
     }
-    $('final-charts').innerHTML='<p class="footnote">'+escape(s.label||'Final closed Research 1')+': '+s.episodes+' common fills. These are endpoint comparisons, not an intraday equity curve or a funded bot return. Rewards are excluded; recorded fee estimates and assumed final inventory sales are included.</p><div class="comparison-charts">'+
+    $('final-charts').innerHTML='<p class="footnote">'+escape(s.label||'Final closed Research 1')+': '+s.episodes+' common fills. These are endpoint comparisons, not an intraday equity curve or a funded bot return. Rewards are excluded; recorded fee estimates and '+(s.valuation_version==='v2'?'UNSOLD inventory marks':'assumed final inventory sales')+' are included.</p><div class="comparison-charts">'+
       plot('Final trading P/L',r=>finite(r.trading_loss)?-r.trading_loss:null,'Negative means a trading loss. Closer to zero is better. Every bar uses the same common cohort.')+
       plot('Saved per holding lot-hour',r=>r.savings_per_held_hour,'Positive beats immediate exit; negative is worse. Missing or undefined values stay unranked.')+'</div>';
   }
   function finalBatchReport(){
-    const section=$('final-batch'),s=selectedRound==='research2'?data?.research2:data?.final_batch;
+    const section=$('final-batch'),s=selectedRound==='research1'?data?.final_batch:data?.[selectedRound];
     if(!section)return;
     section.hidden=s?.status!=='reviewed';if(section.hidden)return;
-    $('round-title').textContent=selectedRound==='research2'?'Research2 · final results':'Research1 · final results';
+    $('round-title').textContent='Research '+selectedRound.slice(-1)+' · final results';
     $('cohort').textContent='Closed recording · '+s.episodes+' episodes';
-    $('entry-admission').textContent=selectedRound==='research2'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. The handling rules are unchanged.':'V4-style quotes at the published reward minimum. No market-selection or reward filter.';
+    $('entry-admission').textContent=selectedRound!=='research1'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. The handling rules are unchanged.':'V4-style quotes at the published reward minimum. No market-selection or reward filter.';
     const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
     const paris=t=>new Date(t).toLocaleString('en-GB',{timeZone:'Europe/Paris'});
     const lotHours=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:3}):'Unknown';
@@ -138,7 +128,7 @@
     const sourceCheck=s.source_reference_review;
     const sourceNote=v2&&sourceCheck?'<details class="footnote"><summary>Data verification limits</summary><p>'+escape(sourceCheck.scope)+' Full chronological source selection and execution are not independently proved by these checks.</p><p>'+count(sourceCheck.partial_ws_references)+' book-update references have only partial depth checks; '+count(sourceCheck.unresolved_metadata_references)+' fee/market-identity references were not directly authenticated. '+count(sourceCheck.planning_excluded_reference_occurrences)+' source-reference occurrences were excluded from the reading plan.</p><p>'+count(sourceCheck.reference_limitation_occurrences)+' limitation annotations remain across the checked references. These overlap; they are not separate failed records:</p><ul>'+Object.entries(sourceCheck.reference_limitations_by_reason||{}).map(([reason,n])=>'<li>'+count(n)+' · '+escape(reason)+'</li>').join('')+'</ul></details>':'';
     const closeDetails=r=>v2
-      ? r.normal_completed+' normal completed<br><small>'+count(r.book_exit_shares)+' shares in book-exit estimates<br><strong>'+count(r.unsold_shares)+' shares UNSOLD</strong> · '+count(r.trade_marked_shares)+' valued at last trade</small>'
+      ? r.normal_completed+' normal completed'+(finite(r.normal_paired_completed)?'<br><small>'+r.normal_paired_completed+' paired completed / '+s.episodes+' common</small>':'')+'<br><small>'+count(r.book_exit_shares)+' shares in book-exit estimates<br><strong>'+count(r.unsold_shares)+' shares UNSOLD</strong> · '+count(r.trade_marked_shares)+' valued at last trade</small>'
       : r.normal_completed+' / '+r.assumed_episodes+'<br><small>'+count(r.assumed_shares)+' shares in assumed sales</small>';
     comparisonCharts(s,label);
     const rows=[...s.rows].sort((a,b)=>{
@@ -149,21 +139,39 @@
       return (finalSort==='hour'?b[field]-a[field]:a[field]-b[field])||a.name.localeCompare(b.name);
     });
     $('final-table').innerHTML='<div class="sample-banner"><strong>Closed recording · '+s.episodes+' common fills · '+s.episode_markets+' recorded markets</strong><p>'+escape(paris(s.recording_start))+' → '+escape(paris(s.window_end))+' Paris</p><p>'+count(s.common_starting_shares)+' identical starting shares per rule. Common immediate-exit loss: <strong>'+money(base.trading_loss)+'</strong>.</p></div>'+
+      (s.farming_end?'<p>New entries end '+escape(paris(s.farming_end))+' Paris, after '+count(s.farming_duration_hours)+' hours. The next six hours are follow-up only; extra recorded time does not guarantee liquidation.</p>':'')+
       '<p>All qualifying fills generated during this recording have been processed chronologically to its end. Earlier recording entries are excluded from this table. '+(v2?'Residual value uses recorded book depth for direct sale or buying the opposite token and merging. Any remaining shares are <strong>UNSOLD</strong>, valued at the last recorded trade. These marks are not sale proceeds.':'Residual shares are included through the agreed assumed sale at the last positive recorded bid, with recorded fee estimates.')+'</p>'+
       '<ul>'+(s.conclusions||[]).map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul>'+
       '<div class="score-controls"><label for="final-sort">Order by </label><select id="final-sort"><option value="loss"'+(finalSort==='loss'?' selected':'')+'>Total loss · lowest first</option><option value="hour"'+(finalSort==='hour'?' selected':'')+'>Saved per holding hour · highest first</option><option value="hours"'+(finalSort==='hours'?' selected':'')+'>Holding hours · lowest first</option></select></div>'+
-      '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>Loss incl. final inventory</th><th>Saved vs same control</th><th>'+(v2?'Normal closes / estimated exits / UNSOLD':'Normal / assumed closes')+'</th><th>Holding lot-hours</th><th>Saved per holding hour</th><th>Unknown outcomes</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Reward trigger excluded; same effective rule as R010</small>':'')+'</td><td><strong>'+money(r.trading_loss)+'</strong></td><td>'+money(r.saved_vs_control)+'</td><td>'+closeDetails(r)+'</td><td>'+lotHours(r.held_hours)+' h</td><td>'+rateMoney(r.savings_per_held_hour)+'</td><td>'+r.unknown_episodes+'<br><small>'+count(r.unpriced_shares)+' unpriced shares</small></td></tr>').join('')+'</tbody></table></div>'+
+      '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>Loss incl. final inventory</th><th>Saved vs same control</th><th>'+(v2?'Normal closes / estimated exits / UNSOLD':'Normal / assumed closes')+'</th><th>Holding lot-hours</th><th>Saved per holding hour</th><th>Unknown outcomes</th></tr></thead><tbody>'+rows.map(r=>'<tr data-final-rule="'+escape(r.name)+'"><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Reward trigger excluded; same effective rule as R010</small>':'')+'</td><td><strong>'+money(r.trading_loss)+'</strong></td><td>'+money(r.saved_vs_control)+'</td><td>'+closeDetails(r)+'</td><td>'+lotHours(r.held_hours)+' h</td><td>'+(r.held_hours===0?'N/A · zero lot-hours':rateMoney(r.savings_per_held_hour))+'</td><td>'+r.unknown_episodes+'<br><small>'+count(r.unpriced_shares)+' unpriced shares</small></td></tr>').join('')+'</tbody></table></div>'+
       '<p class="footnote">The same complete cohort is used for every row. '+(v2?'Book exits use qualified observations at most 30 seconds old and are estimates, not guaranteed fills. The two routes do not add mirrored liquidity. Merge operational costs and latency are unmeasured. Last-trade marks have no fictional executed exit fee; a recent book report does not prove a recent trade.':'Last-positive-bid sales are accounting assumptions: historical quotes may be stale and may lack enough executable size. A later empty or zero-bid update does not erase an earlier positive quote in this convention.')+' Late fills have shorter follow-up to the common recording end; this is not an equal-age six-hour test. Holding hours sum independent fills, include gaps and can exceed the recording duration. Saved per hour is not measured lost rewards, capital efficiency or bot ROI. Unknown fees/prices remain unknown.</p>';
     $('final-sort').onchange=e=>{finalSort=e.target.value;finalBatchReport();};
     $('final-table').insertAdjacentHTML?.('beforeend',sourceNote);
+    $('final-table').insertAdjacentHTML('beforeend','<p class="footnote">The frozen model uses public HTTP snapshots and observed prints, zero cancel latency, common-control-gated reentry and independent overlapping lots. No shared capital or competing-lot depth constraint is modeled. Fees use recorded schedules; exact per-match fees and rounding are not independently validated.</p>');
+    $('round-extra').innerHTML='';
+    if(s.unsold_zero_sensitivity){
+      const stress=Object.fromEntries(s.unsold_zero_sensitivity.map(r=>[r.name,r]));
+      const rate=r=>r.savings_per_held_hour===null?'N/A · zero lot-hours':rateMoney(r.savings_per_held_hour);
+      $('round-extra').innerHTML='<section class="results"><div class="section-title"><h2>Unsold-inventory sensitivity</h2><span>Same common cohort and control</span></div><p>Separate hypothetical scenario: value every UNSOLD share at zero in both the rule and control, retaining simulated cashflows and holding time. Zero is not an observed price, executed sale or full worst-case bound.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>UNSOLD shares</th><th>Saved · trade marks</th><th>Saved · zero recovery</th><th>Saved/lot-hour · marks</th><th>Saved/lot-hour · zero</th></tr></thead><tbody>'+rows.map(r=>'<tr data-stress-rule="'+escape(r.name)+'"><td>'+escape(label(r.name))+'</td><td>'+count(r.unsold_shares)+'</td><td>'+money(r.saved_vs_control)+'</td><td>'+money(stress[r.name].saved_vs_control)+'</td><td>'+rate(r)+'</td><td>'+rate(stress[r.name])+'</td></tr>').join('')+'</tbody></table></div></section>';
+    }
+    if(s.advertised_pools){
+      const p=s.advertised_pools;
+      $('round-extra').insertAdjacentHTML('beforeend','<section class="results"><div class="section-title"><h2>Advertised reward pools</h2><span>Separate from trading P/L</span></div><p>'+count(p.quoted_markets)+' simulated quoted markets, including '+count(p.quoted_markets_without_any_recorded_simulated_fill)+' without an adverse fill. Known advertised all-farmer pools integrate to <strong>'+money(p.integrated_known_advertised_pool_usd)+'</strong>, equivalent to <strong>'+money(p.known_pool_daily_equivalent_over_entry_window_usd)+'/day</strong> over the entry window.</p><p>'+count(p.known_rate_market_hours)+' known-rate market-hours; '+count(p.unknown_rate_market_hours)+' unknown-rate market-hours. Actual earned rewards and the required share for profit remain unknown. These pools belong to all farmers; do not add them to bot P/L.</p><ul>'+p.limitations.map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul></section>');
+    }
+    $('round-history').innerHTML='';
+    if(s.pnl_history?.status==='reviewed'){
+      $('round-history').innerHTML='<section class="results"><div class="section-title"><h2>Trading P/L over recorded time</h2><span>'+escape(s.label)+'</span></div><p>Cumulative as-of accounting: the common cohort grows with new fills. Lines join sampled points; this is not a fixed-capital return series. The values include estimated fees and open inventory. Source-selection and WebSocket reconstruction limits apply.</p><div id="pnl-history-chart"></div></section>';
+      window.ResearchPnlChart.mount($('pnl-history-chart'),s.pnl_history,Object.fromEntries(s.rows.map(r=>[r.name,label(r.name)])));
+    }
   }
   function render(doc,fallback=false){
     if(doc.schema!==1||!Array.isArray(doc.results)||doc.data_kind!=='recorded')throw Error('Unsupported research summary');
     data=doc;$('stage').textContent=doc.state;$('tests').textContent=doc.tests.passed?doc.tests.count+' tests passed':'Needs revalidation';
-    const hasResearch2=doc.research2?.status==='reviewed';
-    if(selectedRound===null){selectedRound=hasResearch2?'research2':'research1';if(hasResearch2)finalSort='hour';}
-    if(selectedRound==='research2'&&!hasResearch2)selectedRound='research1';
-    $('round-choice').hidden=!hasResearch2;
+    const available=['research1',...['research2','research3'].filter(k=>doc[k]?.status==='reviewed')];
+    if(selectedRound===null){const requested=new URLSearchParams(location.search).get('round');selectedRound=available.includes(requested)?requested:available.at(-1);finalSort='hour';}
+    if(!available.includes(selectedRound))selectedRound='research1';
+    for(const option of $('round-select').options)option.disabled=!available.includes(option.value);
+    $('round-choice').hidden=available.length===1;
     $('round-select').value=selectedRound;
     $('round-select').onchange=e=>{selectedRound=e.target.value;finalSort='hour';finalBatchReport();};
     $('cohort').textContent=doc.final_batch?.status==='reviewed'?'Closed recording · '+doc.final_batch.episodes+' episodes':'Final results unavailable';

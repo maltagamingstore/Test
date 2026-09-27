@@ -116,7 +116,7 @@
     const section=$('final-batch'),s=selectedRound==='research1'?data?.final_batch:data?.[selectedRound];
     if(!section)return;
     section.hidden=s?.status!=='reviewed';if(section.hidden)return;
-    $('round-title').textContent='Research '+selectedRound.slice(-1)+' · final results';
+    $('round-title').textContent='Research'+selectedRound.slice(-1)+' · final results';
     $('cohort').textContent='Closed recording · '+s.episodes+' episodes';
     $('entry-admission').textContent=selectedRound!=='research1'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. The handling rules are unchanged.':'V4-style quotes at the published reward minimum. No market-selection or reward filter.';
     const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
@@ -147,7 +147,9 @@
       '<p class="footnote">The same complete cohort is used for every row. '+(v2?'Book exits use qualified observations at most 30 seconds old and are estimates, not guaranteed fills. The two routes do not add mirrored liquidity. Merge operational costs and latency are unmeasured. Last-trade marks have no fictional executed exit fee; a recent book report does not prove a recent trade.':'Last-positive-bid sales are accounting assumptions: historical quotes may be stale and may lack enough executable size. A later empty or zero-bid update does not erase an earlier positive quote in this convention.')+' Late fills have shorter follow-up to the common recording end; this is not an equal-age six-hour test. Holding hours sum independent fills, include gaps and can exceed the recording duration. Saved per hour is not measured lost rewards, capital efficiency or bot ROI. Unknown fees/prices remain unknown.</p>';
     $('final-sort').onchange=e=>{finalSort=e.target.value;finalBatchReport();};
     $('final-table').insertAdjacentHTML?.('beforeend',sourceNote);
-    $('final-table').insertAdjacentHTML('beforeend','<p class="footnote">The frozen model uses public HTTP snapshots and observed prints, zero cancel latency, common-control-gated reentry and independent overlapping lots. No shared capital or competing-lot depth constraint is modeled. Fees use recorded schedules; exact per-match fees and rounding are not independently validated.</p>');
+    if(v2)$('final-table').insertAdjacentHTML('beforeend','<p class="footnote">The frozen model uses public HTTP snapshots and observed prints, zero cancel latency, common-control-gated reentry and independent overlapping lots. No shared capital or competing-lot depth constraint is modeled. Fees use recorded schedules; exact per-match fees and rounding are not independently validated.</p>');
+    $('round-supplement').hidden=selectedRound==='research1';
+    $('round-supplement').open=false;
     $('round-extra').innerHTML='';
     if(s.unsold_zero_sensitivity){
       const stress=Object.fromEntries(s.unsold_zero_sensitivity.map(r=>[r.name,r]));

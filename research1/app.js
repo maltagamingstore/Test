@@ -39,13 +39,15 @@
   }
   function mount(host,history,labels={}){
     const names=validate(history),points=history.points,shown=new Set(names);
-    let field='total_pnl',index=points.length-1;
+    const realizedOnly=history.accounting==='realized_only';
+    let field=realizedOnly?'realized_pnl':'total_pnl',index=points.length-1;
     const color=name=>name==='immediate_exit_v1'?'#ffffff':`hsl(${(names.indexOf(name)*137.508)%360} 72% 65%)`;
     const label=name=>labels[name]||name;
-    host.innerHTML='<div class="pnl-controls"><label>Measure <select data-measure><option value="total_pnl">Trading P/L including open inventory</option><option value="realized_pnl">Realized P/L only</option></select></label></div><div data-plot></div><p class="footnote">Historical timepoints in Europe/Paris. Lines join sampled observations; movements between points are not reconstructed. Missing total values break the line. Open inventory uses recorded book-route estimates; uncovered shares remain UNSOLD at the last recorded trade mark. Last-trade report age is not proof of actual trade age. Rewards are excluded.</p><div data-legend class="pnl-legend"></div><label class="pnl-time">Inspect recorded time <input data-time type="range" min="0" max="'+(points.length-1)+'" step="1" value="'+index+'"></label><div data-detail aria-live="polite"></div>';
+    host.innerHTML='<div class="pnl-controls"><label>Measure <select data-measure>'+(realizedOnly?'':'<option value="total_pnl">Trading P/L including open inventory</option>')+'<option value="realized_pnl">Realized P/L only</option></select></label></div><p data-measure-note class="footnote"></p><div data-plot></div><p class="footnote">Historical timepoints in Europe/Paris. Lines join sampled observations; movements between points are not reconstructed. '+(realizedOnly?'Realized simulated exits only: open holdings and their unrecognized cost are excluded. Do not use this curve to rank holding rules. No historical inventory marks were reconstructed. Final assumed sales remain separate in the results table.':'Missing total values break the line. Open inventory uses recorded book-route estimates; uncovered shares remain UNSOLD at the last recorded trade mark. Last-trade report age is not proof of actual trade age.')+' Rewards are excluded.</p><div data-legend class="pnl-legend"></div><label class="pnl-time">Inspect recorded time <input data-time type="range" min="0" max="'+(points.length-1)+'" step="1" value="'+index+'"></label><div data-detail aria-live="polite"></div>';
     const plot=host.querySelector('[data-plot]'),detail=host.querySelector('[data-detail]');
     host.querySelector('[data-legend]').innerHTML=names.map(n=>'<label><input type="checkbox" checked data-rule="'+esc(n)+'"><span style="color:'+color(n)+'">●</span> '+esc(n==='immediate_exit_v1'?'Immediate exit':n)+'</label>').join('');
     function draw(){
+      host.querySelector('[data-measure-note]').textContent=field==='realized_pnl'?'Realized P/L excludes open holdings and their unrecognized cost. A rule can look better simply by holding losses. Do not rank holding rules from this view.':'Includes estimated value of open inventory; UNSOLD marks are not guaranteed sale proceeds.';
       const start=+new Date(points[0].timestamp),end=+new Date(points.at(-1).timestamp);
       const values=points.flatMap(p=>p.rows.filter(r=>shown.has(r.name)).map(r=>r[field])).filter(finite);
       let low=Math.min(0,...values),high=Math.max(0,...values);if(low===high){low-=1;high+=1;}
@@ -68,7 +70,11 @@
       svg+='<path d="M'+x(+new Date(points[index].timestamp))+' 20 V320" stroke="#a2afb5" stroke-dasharray="3 4"/></svg>';
       plot.innerHTML=svg;
       const p=points[index];
-      detail.innerHTML='<p><strong>'+esc(date(p.timestamp))+' Paris</strong> · '+p.rows[0].episodes+' common fills accumulated by this point.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>'+(field==='total_pnl'?'Total P/L':'Realized P/L')+'</th><th>Open before marking</th><th>Book-exit estimate (shares)</th><th>UNSOLD shares</th><th>Unknown lots</th><th>Last-trade report age</th></tr></thead><tbody>'+p.rows.filter(r=>shown.has(r.name)).sort((a,b)=>(finite(b[field])?b[field]:-Infinity)-(finite(a[field])?a[field]:-Infinity)).map(r=>'<tr><td>'+esc(label(r.name))+'</td><td>'+money(r[field])+'</td><td>'+r.remaining_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</td><td>'+r.book_exit_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</td><td><strong>'+r.unsold_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</strong></td><td>'+r.unknown_episodes+'</td><td>'+(finite(r.oldest_trade_observation_seconds)?(r.oldest_trade_observation_seconds/60).toFixed(1)+' min':'—')+'</td></tr>').join('')+'</tbody></table></div>';
+      if(realizedOnly){
+        detail.innerHTML='<p><strong>'+esc(date(p.timestamp))+' Paris</strong> · '+p.rows[0].episodes+' common fills accumulated by this point.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>Realized simulated P/L</th><th>Open shares</th><th>Unrecognized entry cost</th><th>Open lots</th></tr></thead><tbody>'+p.rows.filter(r=>shown.has(r.name)).map(r=>'<tr><td>'+esc(label(r.name))+'</td><td>'+money(r.realized_pnl)+'</td><td>'+r.remaining_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</td><td>'+money(r.open_cost_basis)+'</td><td>'+r.open_lots+'</td></tr>').join('')+'</tbody></table></div>';
+      }else{
+      detail.innerHTML='<p><strong>'+esc(date(p.timestamp))+' Paris</strong> · '+p.rows[0].episodes+' common fills accumulated by this point.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>'+(field==='total_pnl'?'Total P/L':'Realized P/L')+'</th><th>Open before marking</th><th>Book-exit estimate (shares)</th><th>UNSOLD shares</th><th>Unknown lots</th><th>Last-trade report age</th></tr></thead><tbody>'+p.rows.filter(r=>shown.has(r.name)).sort((a,b)=>field==='realized_pnl'?a.name.localeCompare(b.name):(finite(b[field])?b[field]:-Infinity)-(finite(a[field])?a[field]:-Infinity)).map(r=>'<tr><td>'+esc(label(r.name))+'</td><td>'+money(r[field])+'</td><td>'+r.remaining_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</td><td>'+r.book_exit_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</td><td><strong>'+r.unsold_shares.toLocaleString('en-US',{maximumFractionDigits:3})+'</strong></td><td>'+r.unknown_episodes+'</td><td>'+(finite(r.oldest_trade_observation_seconds)?(r.oldest_trade_observation_seconds/60).toFixed(1)+' min':'—')+'</td></tr>').join('')+'</tbody></table></div>';
+      }
     }
     host.querySelector('[data-measure]').onchange=e=>{field=e.target.value;draw();};
     host.querySelector('[data-time]').oninput=e=>{index=Number(e.target.value);draw();};
@@ -98,19 +104,13 @@
   const finite=n=>typeof n==='number'&&Number.isFinite(n);
   const rateMoney=n=>finite(n)?n.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:Math.abs(n)>0&&Math.abs(n)<0.01?4:2}):'Unknown';
   function comparisonCharts(s,label){
-    const rows=[...s.rows].sort(byLoss);
-    function plot(title,field,explanation){
-      const values=rows.map(r=>field(r));
-      const scale=Math.max(0.01,...values.filter(finite).map(Math.abs));
-      return '<figure class="rule-chart"><figcaption><h3>'+title+'</h3><p>'+explanation+'</p></figcaption><div class="chart-axis"><span>−'+money(scale)+'</span><span>0</span><span>+'+money(scale)+'</span></div>'+rows.map((r,i)=>{
-        const v=values[i],width=finite(v)?Math.abs(v)/scale*50:0;
-        const style=finite(v)?'left:'+(v<0?50-width:50)+'%;width:'+width+'%':'';
-        return '<div class="chart-row" title="'+escape(label(r.name))+': '+escape(money(v))+'"><span class="chart-label">'+escape(r.name==='immediate_exit_v1'?'Immediate exit':r.name)+'</span><div class="bar-track"><i class="bar '+(r.name==='immediate_exit_v1'?'control-bar':v<0?'negative-bar':'positive-bar')+'" style="'+style+'"></i></div><strong>'+money(v)+'</strong></div>';
-      }).join('')+'</figure>';
+    if(s.pnl_history?.status!=='reviewed'){
+      $('final-charts').innerHTML='<h3>Trading P/L over recorded time</h3><p>Reviewed chronological history is unavailable for this recording. Final results remain below; no curve is inferred from the endpoint.</p>';
+      return;
     }
-    $('final-charts').innerHTML='<p class="footnote">'+escape(s.label||'Final closed Research 1')+': '+s.episodes+' common fills. These are endpoint comparisons, not an intraday equity curve or a funded bot return. Rewards are excluded; recorded fee estimates and '+(s.valuation_version==='v2'?'UNSOLD inventory marks':'assumed final inventory sales')+' are included.</p><div class="comparison-charts">'+
-      plot('Final trading P/L',r=>finite(r.trading_loss)?-r.trading_loss:null,'Negative means a trading loss. Closer to zero is better. Every bar uses the same common cohort.')+
-      plot('Saved per holding lot-hour',r=>r.savings_per_held_hour,'Positive beats immediate exit; negative is worse. Missing or undefined values stay unranked.')+'</div>';
+    const realized=s.pnl_history.accounting==='realized_only';
+    $('final-charts').innerHTML='<h3>Trading P/L over recorded time</h3><p>'+escape(s.label||'Research1')+' · '+(realized?'<strong>Realized simulated P/L only.</strong> Open holdings are excluded from the curve and shown in the time inspector. Use the inventory-inclusive final table for the rule comparison.':'Trading P/L includes open inventory and estimated fees. The common cohort grows as fills occur; this is not funded-bot equity.')+'</p><div id="pnl-history-chart"></div>';
+    window.ResearchPnlChart.mount($('pnl-history-chart'),s.pnl_history,Object.fromEntries(s.rows.map(r=>[r.name,label(r.name)])));
   }
   function finalBatchReport(){
     const section=$('final-batch'),s=selectedRound==='research1'?data?.final_batch:data?.[selectedRound];
@@ -148,7 +148,7 @@
     $('final-sort').onchange=e=>{finalSort=e.target.value;finalBatchReport();};
     $('final-table').insertAdjacentHTML?.('beforeend',sourceNote);
     if(v2)$('final-table').insertAdjacentHTML('beforeend','<p class="footnote">The frozen model uses public HTTP snapshots and observed prints, zero cancel latency, common-control-gated reentry and independent overlapping lots. No shared capital or competing-lot depth constraint is modeled. Fees use recorded schedules; exact per-match fees and rounding are not independently validated.</p>');
-    $('round-supplement').hidden=selectedRound==='research1';
+    $('round-supplement').hidden=!s.unsold_zero_sensitivity&&!s.advertised_pools;
     $('round-supplement').open=false;
     $('round-extra').innerHTML='';
     if(s.unsold_zero_sensitivity){
@@ -160,11 +160,7 @@
       const p=s.advertised_pools;
       $('round-extra').insertAdjacentHTML('beforeend','<section class="results"><div class="section-title"><h2>Advertised reward pools</h2><span>Separate from trading P/L</span></div><p>'+count(p.quoted_markets)+' simulated quoted markets, including '+count(p.quoted_markets_without_any_recorded_simulated_fill)+' without an adverse fill. Known advertised all-farmer pools integrate to <strong>'+money(p.integrated_known_advertised_pool_usd)+'</strong>, equivalent to <strong>'+money(p.known_pool_daily_equivalent_over_entry_window_usd)+'/day</strong> over the entry window.</p><p>'+count(p.known_rate_market_hours)+' known-rate market-hours; '+count(p.unknown_rate_market_hours)+' unknown-rate market-hours. Actual earned rewards and the required share for profit remain unknown. These pools belong to all farmers; do not add them to bot P/L.</p><ul>'+p.limitations.map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul></section>');
     }
-    $('round-history').innerHTML='';
-    if(s.pnl_history?.status==='reviewed'){
-      $('round-history').innerHTML='<section class="results"><div class="section-title"><h2>Trading P/L over recorded time</h2><span>'+escape(s.label)+'</span></div><p>Cumulative as-of accounting: the common cohort grows with new fills. Lines join sampled points; this is not a fixed-capital return series. The values include estimated fees and open inventory. Source-selection and WebSocket reconstruction limits apply.</p><div id="pnl-history-chart"></div></section>';
-      window.ResearchPnlChart.mount($('pnl-history-chart'),s.pnl_history,Object.fromEntries(s.rows.map(r=>[r.name,label(r.name)])));
-    }
+
   }
   function render(doc,fallback=false){
     if(doc.schema!==1||!Array.isArray(doc.results)||doc.data_kind!=='recorded')throw Error('Unsupported research summary');

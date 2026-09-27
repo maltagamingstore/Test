@@ -45,8 +45,11 @@
     const label=name=>labels[name]||name;
     host.innerHTML='<div class="pnl-controls"><label>Measure <select data-measure>'+(realizedOnly?'':'<option value="total_pnl">Trading P/L including open inventory</option>')+'<option value="realized_pnl">Realized P/L only</option></select></label></div><p data-measure-note class="footnote"></p><div data-plot></div><p class="footnote">Historical timepoints in Europe/Paris. Lines join sampled observations; movements between points are not reconstructed. '+(realizedOnly?'Realized simulated exits only: open holdings and their unrecognized cost are excluded. Do not use this curve to rank holding rules. No historical inventory marks were reconstructed. Final assumed sales remain separate in the results table.':'Missing total values break the line. Open inventory uses recorded book-route estimates; uncovered shares remain UNSOLD at the last recorded trade mark. Last-trade report age is not proof of actual trade age.')+' Rewards are excluded.</p><div data-legend class="pnl-legend"></div><label class="pnl-time">Inspect recorded time <input data-time type="range" min="0" max="'+(points.length-1)+'" step="1" value="'+index+'"></label><div data-detail aria-live="polite"></div>';
     const plot=host.querySelector('[data-plot]'),detail=host.querySelector('[data-detail]');
-    host.querySelector('[data-legend]').innerHTML=names.map(n=>'<label><input type="checkbox" checked data-rule="'+esc(n)+'"><span style="color:'+color(n)+'">●</span> '+esc(n==='immediate_exit_v1'?'Immediate exit':n)+'</label>').join('');
+    host.querySelector('[data-legend]').innerHTML=names.map(n=>'<label><input type="checkbox" checked data-rule="'+esc(n)+'"><span style="color:'+color(n)+'">●</span> '+esc(n==='immediate_exit_v1'?'Immediate exit':n)+'</label>'+(n==='immediate_exit_v1'?'<label><input type="checkbox" checked data-select-all> Select all</label>':'')).join('');
+    const selectAll=host.querySelector('[data-select-all]');
     function draw(){
+      selectAll.checked=shown.size===names.length;
+      selectAll.indeterminate=shown.size>0&&shown.size<names.length;
       host.querySelector('[data-measure-note]').textContent=field==='realized_pnl'?'Realized P/L excludes open holdings and their unrecognized cost. A rule can look better simply by holding losses. Do not rank holding rules from this view.':'Includes estimated value of open inventory; UNSOLD marks are not guaranteed sale proceeds.';
       const start=+new Date(points[0].timestamp),end=+new Date(points.at(-1).timestamp);
       const values=points.flatMap(p=>p.rows.filter(r=>shown.has(r.name)).map(r=>r[field])).filter(finite);
@@ -78,6 +81,12 @@
     }
     host.querySelector('[data-measure]').onchange=e=>{field=e.target.value;draw();};
     host.querySelector('[data-time]').oninput=e=>{index=Number(e.target.value);draw();};
+    selectAll.onchange=()=>{
+      const checked=selectAll.checked;
+      shown.clear();
+      host.querySelectorAll('[data-rule]').forEach(input=>{input.checked=checked;if(checked)shown.add(input.dataset.rule);});
+      draw();
+    };
     host.querySelectorAll('[data-rule]').forEach(input=>input.onchange=()=>{input.checked?shown.add(input.dataset.rule):shown.delete(input.dataset.rule);draw();});
     draw();
   }

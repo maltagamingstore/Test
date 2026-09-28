@@ -121,9 +121,33 @@
     $('final-charts').innerHTML='<h3>Trading P/L over recorded time</h3><p>'+escape(s.label||'Research1')+' · '+(realized?'<strong>Realized simulated P/L only.</strong> Open holdings are excluded from the curve and shown in the time inspector. Use the inventory-inclusive final table for the rule comparison.':'Trading P/L includes open inventory and estimated fees. The common cohort grows as fills occur; this is not funded-bot equity.')+'</p><div id="pnl-history-chart"></div>';
     window.ResearchPnlChart.mount($('pnl-history-chart'),s.pnl_history,Object.fromEntries(s.rows.map(r=>[r.name,label(r.name)])));
   }
+  function farmingRewardReport(){
+    const host=$('farming-rewards'),r=data?.farming_rewards?.[selectedRound];
+    if(!host)return;
+    host.hidden=r?.status!=='reviewed'||r?.alignment?.status!=='reviewed';
+    if(host.hidden){host.innerHTML='';return;}
+    const n=x=>finite(x)?x.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
+    const pct=x=>finite(x)?n(x*100)+'%':'Unknown';
+    const when=t=>new Date(t).toLocaleString('en-GB',{timeZone:'Europe/Paris'});
+    host.innerHTML='<div class="section-title"><h2>Estimated farming rewards</h2><span>Recorded basket · unlimited funding assumed</span></div>'+
+      '<p>Our hypothetical common farming orders across <strong>'+n(r.quoted_markets)+' quoted markets</strong>, including markets that never filled. '+escape(when(r.start))+' → '+escape(when(r.end))+' Paris ('+n(r.duration_hours)+' hours).</p>'+
+      '<div class="status-strip"><div><span class="label">ESTIMATED GROSS REWARDS</span><strong>'+money(r.estimated_reward_usd)+'</strong><small>Over this recorded window</small></div><div><span class="label">24-HOUR EQUIVALENT</span><strong>'+money(r.daily_equivalent_usd)+'</strong><small>Rescaled estimate · not a forecast</small></div><div><span class="label">COMPETITION SENSITIVITY</span><strong>'+money(r.side_sum_estimate_usd)+'</strong><small>Same window · side-sum model</small></div></div>'+
+      '<p><strong>Hypothetical gross reward estimates. No rewards were earned, accrued or received by this replay.</strong> These are not spendable cash. Both figures are model scenarios; the sensitivity figure is neither a guaranteed minimum nor a confidence bound. Our actual reward share is unmeasured. All handling rules share this farming schedule. Rewards are separate from the trading P/L chart and rule rankings above.</p>'+
+      '<p>Matched to the original replay orders: '+n(r.alignment.adverse_fill_markets)+' markets had adverse fills; '+n(r.alignment.quoted_markets_without_adverse_fills)+' other markets had farming orders without adverse fills. Monitored markets with no farming orders contribute no rewards. Exit valuation ends '+escape(when(r.alignment.boundaries.exit_valuation_cutoff))+' Paris; time after the farming cutoff earns no rewards.</p>'+
+      (r.alignment.boundaries.explanation?'<p class="footnote">'+escape(r.alignment.boundaries.explanation)+'</p>':'')+
+      '<div class="table-scroll"><table><thead><tr><th>Coverage and context</th><th>Value</th></tr></thead><tbody>'+
+      '<tr><td>Simulated farming market-hours</td><td>'+n(r.quote_market_hours)+'</td></tr>'+
+      '<tr><td>Market-hours with rate and score estimate</td><td>'+n(r.scored_market_hours)+'</td></tr>'+
+      '<tr><td>Market-hours excluded from reward estimate: missing inputs</td><td>'+n(r.unknown_estimate_market_hours)+'</td></tr>'+
+      '<tr><td>Advertised pool during known-rate farming time · shared by all farmers</td><td>'+money(r.offered_pool_usd)+'</td></tr>'+
+      '<tr><td>Modeled pool-weighted reward share · supported intervals</td><td>'+pct(r.modeled_pool_weighted_share)+'</td></tr></tbody></table></div>'+
+      '<details><summary>Estimated rewards over recorded time</summary><p>Hourly bins from the stated window start; the last bin may be shorter than an hour. Market-hours sum simultaneous markets.</p><div class="table-scroll"><table><thead><tr><th>From · Paris</th><th>Estimated rewards</th><th>Side-sum sensitivity</th><th>Farming market-hours</th><th>Unknown market-hours</th></tr></thead><tbody>'+r.hours.map(h=>'<tr><td>'+escape(when(h.start))+'</td><td>'+money(h.estimate)+'</td><td>'+money(h.side_sum_estimate)+'</td><td>'+n(h.quote_market_hours)+'</td><td>'+n(h.unknown_market_hours)+'</td></tr>').join('')+'</tbody></table></div></details>'+
+      '<details><summary>How the estimate is calculated and what remains uncertain</summary><ul>'+r.limitations.map(t=>'<li>'+escape(t)+'</li>').join('')+'</ul></details>';
+  }
   function finalBatchReport(){
     const section=$('final-batch'),s=selectedRound==='research1'?data?.final_batch:data?.[selectedRound];
     if(!section)return;
+    farmingRewardReport();
     section.hidden=s?.status!=='reviewed';if(section.hidden)return;
     $('round-title').textContent='Research'+selectedRound.slice(-1)+' · final results';
     $('cohort').textContent='Closed recording · '+s.episodes+' episodes';

@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "published_at": "2026-09-27T10:29:06.355049+00:00",
-  "next_sync_due": "2026-09-27T16:00:00+00:00",
-  "next_evaluation_due": "2026-09-27T15:00:00+00:00",
+  "published_at": "2026-09-28T21:00:13.116247+00:00",
+  "next_sync_due": "2026-09-28T22:00:00+00:00",
+  "next_evaluation_due": "2026-09-29T03:00:00+00:00",
   "sync_interval_hours": 6,
   "research_updated_at": "2026-09-27T09:27:35.855309+00:00",
-  "state": "Recorded batch closed · simulated handling",
+  "state": "Recorded batch closed \u00b7 simulated handling",
   "tests": {
     "passed": true,
     "count": 21,
@@ -1332,7 +1332,7 @@
     "recording_start": "2026-09-21T15:34:05.546457+00:00",
     "source_digest": "0deb5b862c236b0f44b8ebdc2996df1b75396f2ce72a08301cb4e284a54b9f6d",
     "conclusions": [
-      "This report covers all 653 generated entries in 395 input-supported recorded markets from the 21–22 September long session, out of 818 entries in the expanded campaign. All 20 unchanged rules and the immediate-exit control use the same entries and starting shares.",
+      "This report covers all 653 generated entries in 395 input-supported recorded markets from the 21\u201322 September long session, out of 818 entries in the expanded campaign. All 20 unchanged rules and the immediate-exit control use the same entries and starting shares.",
       "With every residual quantity valued at its last recorded positive bid, R007 has the lowest full-cohort loss: $1,421.28 versus $2,509.31 for immediate exit, a $1,088.04 reduction. These totals include assumed sales and recorded fee estimates, not verified executable closeouts.",
       "R007 requires 294 assumed residual closeouts covering 66,458.67 shares, or 84.45% of its starting shares; immediate exit requires one for 20 shares. Retained positive bids can be stale or followed by a zero bid, and the assumption does not constrain sale quantity to displayed depth.",
       "R001 has the highest saved-per-lot-hour ratio: $200.84 saved over 93.93 lot-hours, or $2.14 per lot-hour. R007 saves $1,088.04 over 3,935.33 lot-hours, or $0.28 per lot-hour. Lot-hours measure time until each lot is flat, including overlap and gaps; they do not measure lost rewards or shared-capital return.",
@@ -1341,7 +1341,7 @@
       "Five full three-hour UTC entry windows contain 518 entries; the two partial edges contain 135. Each window follows its entries through the common recording cutoff, rather than measuring a fixed three-hour outcome.",
       "R008 and R015 lose $2,715.43 and $2,798.34, respectively, versus the $2,509.31 control. All rules remain in the report. This single historical batch does not establish a profitable bot or a proven live winner."
     ],
-    "scope": "All common entry episodes generated during the long21–22September recording; earlier recording entries excluded.",
+    "scope": "All common entry episodes generated during the long21\u201322September recording; earlier recording entries excluded.",
     "pnl_history": {
       "status": "reviewed",
       "data_kind": "recorded",
@@ -7342,7 +7342,7 @@
   "research2": {
     "status": "reviewed",
     "valuation_version": "v2",
-    "label": "Research2 · reward minimum ≤50 shares",
+    "label": "Research2 \u00b7 reward minimum \u226450 shares",
     "batch_status": "closed",
     "data_kind": "recorded",
     "qualified": false,
@@ -16870,7 +16870,7 @@
   "research3": {
     "status": "reviewed",
     "valuation_version": "v2",
-    "label": "Research3 · six-hour follow-up",
+    "label": "Research3 \u00b7 six-hour follow-up",
     "batch_status": "closed",
     "data_kind": "recorded",
     "qualified": false,
@@ -30962,9 +30962,285 @@
     "passed": true,
     "count": 48
   },
-  "evaluation_schedule": "05:00 · 11:00 · 17:00 · 23:00 Europe/Paris",
-  "publication_schedule": "00:00 · 06:00 · 12:00 · 18:00 Europe/Paris",
+  "farming_rewards": {
+    "research3": {
+      "schema": 1,
+      "round": "research3",
+      "data_kind": "recorded",
+      "method": "aggregate_l2_bbo_proxy_v1",
+      "start": "2026-09-25T08:19:20.425917+00:00",
+      "end": "2026-09-26T08:12:26.722936+00:00",
+      "duration_hours": 23.88508250527912,
+      "common_entries": 216,
+      "quoted_markets": 22250,
+      "intervals": 6558227,
+      "quote_market_hours": 42045.5347437552,
+      "known_rate_market_hours": 41448.14186332358,
+      "unknown_rate_market_hours": 597.3928804316123,
+      "scored_market_hours": 41448.14186332358,
+      "unknown_estimate_market_hours": 597.3928804316123,
+      "score_eligible_market_hours": 41423.14866467873,
+      "offered_pool_usd": 38311.628845164865,
+      "modeled_pool_usd": 38311.628845164865,
+      "estimated_reward_usd": 984.1399848504975,
+      "daily_equivalent_usd": 988.8749444843472,
+      "side_sum_estimate_usd": 384.4144383447894,
+      "side_sum_daily_equivalent_usd": 386.26395861248596,
+      "modeled_pool_weighted_share": 0.025687761510424564,
+      "received_rewards": null,
+      "spendable_reward_cash": null,
+      "limitations": [
+        "Estimated gross liquidity rewards from hypothetical common farming orders; no rewards were earned, accrued or received by this replay.",
+        "Unlimited funding is assumed. This is the original replay basket, including markets with no adverse fills, not an affordable portfolio or ROI.",
+        "All handling rules share this common farming schedule, gated by immediate-exit control. This is not a separate reward estimate for each rule.",
+        "Main estimate uses aggregate two-sided L2 competition, the inherited best-bid/ask midpoint, recorded size/spread settings and squared spread weights. Individual maker scoring, venue size-adjusted midpoint and order-level eligibility are not observed.",
+        "The side-sum estimate changes only the competition denominator. It is a sensitivity scenario, not a confidence bound or a guaranteed minimum.",
+        "Canonical YES-book depth avoids adding mirrored YES/NO liquidity. Complement-book disagreement and competition reactions to our hypothetical orders are not modeled.",
+        "Rates are carried forward from source-bound historical reward snapshots within program dates. Missing rate or scoring inputs are excluded and reported, never silently filled with zero.",
+        "Daily equivalent rescales the observed estimate by the full stated entry-window duration, including quote-off gaps. It is not a full UTC payout day or a forecast.",
+        "These estimates are separate from the existing trading P/L, UNSOLD valuations and rule rankings. No historical result was changed."
+      ],
+      "hours": [
+        {
+          "start": "2026-09-25T08:19:20.425917+00:00",
+          "end": "2026-09-25T09:19:20.425917+00:00",
+          "estimate": 36.47132056038783,
+          "side_sum_estimate": 14.181881953456323,
+          "offered_pool": 1222.18802939497,
+          "quote_market_hours": 1881.9624974967373,
+          "unknown_market_hours": 67.17053950442208
+        },
+        {
+          "start": "2026-09-25T09:19:20.425917+00:00",
+          "end": "2026-09-25T10:19:20.425917+00:00",
+          "estimate": 38.49295973437339,
+          "side_sum_estimate": 15.062277374663042,
+          "offered_pool": 1259.9467545105701,
+          "quote_market_hours": 1854.2843123048544,
+          "unknown_market_hours": 47.86824926906162
+        },
+        {
+          "start": "2026-09-25T10:19:20.425917+00:00",
+          "end": "2026-09-25T11:19:20.425917+00:00",
+          "estimate": 34.479018836511145,
+          "side_sum_estimate": 13.369960635440531,
+          "offered_pool": 1144.9629413976506,
+          "quote_market_hours": 1723.798950835069,
+          "unknown_market_hours": 42.54600066065788
+        },
+        {
+          "start": "2026-09-25T11:19:20.425917+00:00",
+          "end": "2026-09-25T12:19:20.425917+00:00",
+          "estimate": 36.234870935334214,
+          "side_sum_estimate": 14.121268917339059,
+          "offered_pool": 1206.8633149862999,
+          "quote_market_hours": 1784.2647114343777,
+          "unknown_market_hours": 36.27454681621658
+        },
+        {
+          "start": "2026-09-25T12:19:20.425917+00:00",
+          "end": "2026-09-25T13:19:20.425917+00:00",
+          "estimate": 35.039113198159974,
+          "side_sum_estimate": 13.580723828565857,
+          "offered_pool": 1169.2839713075418,
+          "quote_market_hours": 1761.3985751746761,
+          "unknown_market_hours": 34.048147102130784
+        },
+        {
+          "start": "2026-09-25T13:19:20.425917+00:00",
+          "end": "2026-09-25T14:19:20.425917+00:00",
+          "estimate": 34.42043133476958,
+          "side_sum_estimate": 13.20750905271529,
+          "offered_pool": 1165.431631528169,
+          "quote_market_hours": 1782.2764347733391,
+          "unknown_market_hours": 28.284639669325617
+        },
+        {
+          "start": "2026-09-25T14:19:20.425917+00:00",
+          "end": "2026-09-25T15:19:20.425917+00:00",
+          "estimate": 33.72836048177525,
+          "side_sum_estimate": 13.004459278898418,
+          "offered_pool": 1147.376722071636,
+          "quote_market_hours": 1766.8097812386354,
+          "unknown_market_hours": 23.69231904334492
+        },
+        {
+          "start": "2026-09-25T15:19:20.425917+00:00",
+          "end": "2026-09-25T16:19:20.425917+00:00",
+          "estimate": 33.14558131991303,
+          "side_sum_estimate": 12.768809137191896,
+          "offered_pool": 1139.5849994725893,
+          "quote_market_hours": 1763.5981875778568,
+          "unknown_market_hours": 22.228400756782957
+        },
+        {
+          "start": "2026-09-25T16:19:20.425917+00:00",
+          "end": "2026-09-25T17:19:20.425917+00:00",
+          "estimate": 51.988740850006366,
+          "side_sum_estimate": 20.20416950880262,
+          "offered_pool": 1868.6863543422685,
+          "quote_market_hours": 1650.3860827698973,
+          "unknown_market_hours": 16.659370767275494
+        },
+        {
+          "start": "2026-09-25T17:19:20.425917+00:00",
+          "end": "2026-09-25T18:19:20.425917+00:00",
+          "estimate": 76.26589475200501,
+          "side_sum_estimate": 29.626406907529745,
+          "offered_pool": 3029.804462541653,
+          "quote_market_hours": 2018.3047271621226,
+          "unknown_market_hours": 18.0043906913201
+        },
+        {
+          "start": "2026-09-25T18:19:20.425917+00:00",
+          "end": "2026-09-25T19:19:20.425917+00:00",
+          "estimate": 71.56606016274729,
+          "side_sum_estimate": 28.208158993898003,
+          "offered_pool": 3080.6444693238273,
+          "quote_market_hours": 2058.1165594608256,
+          "unknown_market_hours": 16.88427777475781
+        },
+        {
+          "start": "2026-09-25T19:19:20.425917+00:00",
+          "end": "2026-09-25T20:19:20.425917+00:00",
+          "estimate": 64.18569305251876,
+          "side_sum_estimate": 25.46176946699264,
+          "offered_pool": 2959.3369728143743,
+          "quote_market_hours": 1982.9531900821792,
+          "unknown_market_hours": 20.767589961952634
+        },
+        {
+          "start": "2026-09-25T20:19:20.425917+00:00",
+          "end": "2026-09-25T21:19:20.425917+00:00",
+          "estimate": 60.346975867220955,
+          "side_sum_estimate": 23.799708281716118,
+          "offered_pool": 3023.2304840798506,
+          "quote_market_hours": 2052.564319324162,
+          "unknown_market_hours": 19.92372989383009
+        },
+        {
+          "start": "2026-09-25T21:19:20.425917+00:00",
+          "end": "2026-09-25T22:19:20.425917+00:00",
+          "estimate": 53.75364311594013,
+          "side_sum_estimate": 21.17018349281438,
+          "offered_pool": 2787.3141109138523,
+          "quote_market_hours": 1950.1318451123768,
+          "unknown_market_hours": 19.56037826008267
+        },
+        {
+          "start": "2026-09-25T22:19:20.425917+00:00",
+          "end": "2026-09-25T23:19:20.425917+00:00",
+          "estimate": 64.1988987795504,
+          "side_sum_estimate": 25.05710592715999,
+          "offered_pool": 2865.276259130699,
+          "quote_market_hours": 1969.3273836406734,
+          "unknown_market_hours": 17.290377746952906
+        },
+        {
+          "start": "2026-09-25T23:19:20.425917+00:00",
+          "end": "2026-09-26T00:19:20.425917+00:00",
+          "estimate": 40.895649779656566,
+          "side_sum_estimate": 15.959813069218837,
+          "offered_pool": 1628.3892209694438,
+          "quote_market_hours": 1647.484327168266,
+          "unknown_market_hours": 19.85935615791215
+        },
+        {
+          "start": "2026-09-26T00:19:20.425917+00:00",
+          "end": "2026-09-26T01:19:20.425917+00:00",
+          "estimate": 24.60760542861464,
+          "side_sum_estimate": 9.650501008941157,
+          "offered_pool": 917.5650651246087,
+          "quote_market_hours": 1545.0659453374146,
+          "unknown_market_hours": 20.77496985958682
+        },
+        {
+          "start": "2026-09-26T01:19:20.425917+00:00",
+          "end": "2026-09-26T02:19:20.425917+00:00",
+          "estimate": 25.57116522327129,
+          "side_sum_estimate": 9.979293030109282,
+          "offered_pool": 916.3284323540463,
+          "quote_market_hours": 1574.045462965899,
+          "unknown_market_hours": 20.062387260993322
+        },
+        {
+          "start": "2026-09-26T02:19:20.425917+00:00",
+          "end": "2026-09-26T03:19:20.425917+00:00",
+          "estimate": 26.767130216424178,
+          "side_sum_estimate": 10.416879386193596,
+          "offered_pool": 940.3094689104347,
+          "quote_market_hours": 1539.3385237054692,
+          "unknown_market_hours": 17.938487414982585
+        },
+        {
+          "start": "2026-09-26T03:19:20.425917+00:00",
+          "end": "2026-09-26T04:19:20.425917+00:00",
+          "estimate": 27.801977727430547,
+          "side_sum_estimate": 10.845011231638425,
+          "offered_pool": 962.1251341259331,
+          "quote_market_hours": 1568.7285408889586,
+          "unknown_market_hours": 19.385730694731077
+        },
+        {
+          "start": "2026-09-26T04:19:20.425917+00:00",
+          "end": "2026-09-26T05:19:20.425917+00:00",
+          "estimate": 30.199816714582553,
+          "side_sum_estimate": 11.800929669565944,
+          "offered_pool": 1023.4324536806516,
+          "quote_market_hours": 1677.7066210799085,
+          "unknown_market_hours": 18.271039988795916
+        },
+        {
+          "start": "2026-09-26T05:19:20.425917+00:00",
+          "end": "2026-09-26T06:19:20.425917+00:00",
+          "estimate": 30.801319813534704,
+          "side_sum_estimate": 12.080220687596032,
+          "offered_pool": 1019.801044321038,
+          "quote_market_hours": 1623.5056987495554,
+          "unknown_market_hours": 16.782480273710355
+        },
+        {
+          "start": "2026-09-26T06:19:20.425917+00:00",
+          "end": "2026-09-26T07:19:20.425917+00:00",
+          "estimate": 27.57843773310702,
+          "side_sum_estimate": 10.885603328447937,
+          "offered_pool": 938.3184267451811,
+          "quote_market_hours": 1458.3439409005641,
+          "unknown_market_hours": 16.916727786064147
+        },
+        {
+          "start": "2026-09-26T07:19:20.425917+00:00",
+          "end": "2026-09-26T08:12:26.722936+00:00",
+          "estimate": 25.599319232551803,
+          "side_sum_estimate": 9.971794175911137,
+          "offered_pool": 895.428121125205,
+          "quote_market_hours": 1411.1381245713765,
+          "unknown_market_hours": 16.198743076721826
+        }
+      ],
+      "status": "reviewed",
+      "alignment": {
+        "status": "reviewed",
+        "boundaries": {
+          "entry_selection_start": "2026-09-25T08:19:20.425917+00:00",
+          "entry_selection_end": "2026-09-26T08:12:26.722936+00:00",
+          "reward_start": "2026-09-25T08:19:20.425917+00:00",
+          "reward_end": "2026-09-26T08:12:26.722936+00:00",
+          "first_reward_exposure": "2026-09-25T08:19:20.720569+00:00",
+          "last_reward_exposure": "2026-09-26T08:12:26.722936+00:00",
+          "daily_equivalent_denominator_hours": 23.88508250527912,
+          "exit_valuation_cutoff": "2026-09-26T14:12:26.722936+00:00"
+        },
+        "adverse_fill_markets": 164,
+        "quoted_markets_without_adverse_fills": 22086
+      },
+      "review_digest": "364257b3c7d4f4157b0ce0f2f0e6c1ddb61ddd98782547d89fa8f8283333a769",
+      "source_digest": "bcff3e1ca021d62c16bcb92d2a3c067c1d362382364d5b029ddf3a6d45ded002"
+    }
+  },
+  "evaluation_schedule": "05:00 \u00b7 11:00 \u00b7 17:00 \u00b7 23:00 Europe/Paris",
+  "publication_schedule": "00:00 \u00b7 06:00 \u00b7 12:00 \u00b7 18:00 Europe/Paris",
   "baseline": "Immediate exit",
   "trigger": "Every farming fill leaving unpaired inventory",
-  "source_digest": "1e7fe24766782c7b8cec069f51c56d7cace6d990ad93ea5ac45e32ad5520cdcc"
+  "source_digest": "27530a45d6131f7d1e6711570f1f647f7256ea291fc34fca40fca96dd0b09013"
 }

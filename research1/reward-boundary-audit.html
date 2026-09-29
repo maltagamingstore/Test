@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="robots" content="noindex">
+<title>TradeLock · Reward calculation audit</title>
+<link rel="stylesheet" href="./style.css?v=chronological-pnl-4">
+</head>
+<body>
+<header><a class="brand" href="/">Trade<span>Lock</span></a><nav><a href="./">Research results</a></nav></header>
+<main>
+<div class="heading"><div><div class="eyebrow">AUDIT ADDENDUM · 29 SEPTEMBER 2026</div><h1>Reward calculation<br><span>numerical limitation.</span></h1></div></div>
+<section class="results">
+<h2>A confirmed boundary artifact remains in the frozen model</h2>
+<p>In one authenticated recorded example, ordinary floating-point arithmetic produced tiny positive own and competing scores at the reward-band boundary. Dividing these scores produced a nonzero modeled reward share. Recalculating both scores from the same raw prices with exact decimal arithmetic gave zero. Reproducing the frozen calculation therefore does not establish numerical correctness.</p>
+<p><strong>The published estimates retain their original calculation.</strong> They describe partial, conditional gross model outputs. They are not earned rewards, payouts, spendable cash, or forecasts. Trading P/L and the handling rules are unchanged.</p>
+<h2>Measured near-zero-score contributions</h2>
+<p>The audit scanned every original reward interval in Research 1, 2 and 3 and checked which diagnostic candidates remain in the published settings-consistency revision. The table shows those accepted candidates' existing contributions to the two model scenarios.</p>
+<div class="table-scroll"><table><thead><tr><th>Research</th><th>Original intervals scanned</th><th>Accepted candidates / markets</th><th>Candidate farming market-hours</th><th>Main contribution</th><th>Side-sum contribution</th></tr></thead><tbody>
+<tr><td><a href="./?round=research1">Research 1</a></td><td>9,365,699</td><td>38 / 8</td><td>0.186642</td><td>$0.226627</td><td>$0.120545</td></tr>
+<tr><td><a href="./?round=research2">Research 2</a></td><td>6,158,126</td><td>63 / 8</td><td>0.302961</td><td>$0.046058</td><td>$0.044838</td></tr>
+<tr><td><a href="./?round=research3">Research 3</a></td><td>6,558,227</td><td>15 / 9</td><td>0.105670</td><td>$0.007188</td><td>$0.004099</td></tr>
+</tbody></table></div>
+<p><strong>These amounts are not corrected reward totals, proven payout losses, or an exhaustive error bound.</strong> The exact decimal outcome has not been reconstructed for every historical candidate. Do not subtract these contributions as if that were a validated correction. Small aggregate contributions can still contain large local distortions in modeled reward share.</p>
+<p>The three nested diagnostic thresholds—positive own plus competing score below 10<sup>−24</sup>, 10<sup>−18</sup> and 10<sup>−12</sup> weighted shares—selected the same candidates within each research. They are diagnostic thresholds, not new eligibility rules or independent repetitions. Market-hours sum simultaneously quoted markets. Each research retains its own entry window and excludes its exit-only follow-up from reward exposure.</p>
+<p>Missing or conflicting reward inputs remain unknown. Aggregate order-book competition is an assumption about reward allocation, not an observation of our actual reward entitlement. A corrected numerical projection would require its own specified method and complete reconciliation; this addendum does not silently retune the original studies.</p>
+<details><summary>Evidence and review scope</summary><p>The accepted legacy census covers 22,082,052 original intervals. Exact candidate membership was checked against each interval's recorded native settings source. A separate full-ledger reproduction, three defender reviews, five attacker reviews and a fresh synthesis support this qualified disclosure. Raw decimal failure receipts remain preserved. This does not certify complete source acquisition, unseen numerical errors or real exchange payments.</p><p>Audit: Research 4 final_audit/SYNTHESIS_REWARDS.json and LEGACY_BOUNDARY_PROVENANCE.json, 29 September 2026. The census applies to the published recorded_settings_consistency_v2 reward revision; source-consistency exclusions and all original evidence remain preserved.</p></details>
+</section>
+<footer><a href="./">Return to research results</a><span>Frozen estimates · known limitation disclosed</span></footer>
+</main>
+</body>
+</html>

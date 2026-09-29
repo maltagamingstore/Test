@@ -143,7 +143,7 @@
       '<tr><td>Simulated farming market-hours</td><td>'+n(r.quote_market_hours)+'</td></tr>'+
       '<tr><td>Market-hours with rate and score estimate</td><td>'+n(r.scored_market_hours)+'</td></tr>'+
       '<tr><td>Market-hours excluded from reward estimate: missing or conflicting inputs</td><td>'+n(r.unknown_estimate_market_hours)+'</td></tr>'+
-      (r.accounting_revision==='recorded_settings_consistency_v2'?'<tr><td>Market-hours without native settings corroboration · may overlap missing inputs above</td><td>'+n(r.uncorroborated_settings_market_hours)+'</td></tr>':'')+
+      (r.accounting_revision==='recorded_settings_consistency_v2'&&finite(r.uncorroborated_settings_market_hours)?'<tr><td>Market-hours without native settings corroboration · may overlap missing inputs above</td><td>'+n(r.uncorroborated_settings_market_hours)+'</td></tr>':'')+
       '<tr><td>Advertised pool during known-rate farming time · shared by all farmers</td><td>'+money(r.offered_pool_usd)+'</td></tr>'+
       '<tr><td>Modeled pool-weighted reward share · supported intervals</td><td>'+pct(r.modeled_pool_weighted_share)+'</td></tr></tbody></table></div>'+
       '<details><summary>Estimated rewards over recorded time</summary><p>Hourly bins from the stated window start; the last bin may be shorter than an hour. Market-hours sum simultaneous markets.</p><div class="table-scroll"><table><thead><tr><th>From · Paris</th><th>Estimated rewards</th><th>Side-sum sensitivity</th><th>Farming market-hours</th><th>Unknown market-hours</th></tr></thead><tbody>'+r.hours.map(h=>'<tr><td>'+escape(when(h.start))+'</td><td>'+money(h.estimate)+'</td><td>'+money(h.side_sum_estimate)+'</td><td>'+n(h.quote_market_hours)+'</td><td>'+n(h.unknown_market_hours)+'</td></tr>').join('')+'</tbody></table></div></details>'+
@@ -155,12 +155,22 @@
     farmingRewardReport();
     section.hidden=s?.status!=='reviewed';if(section.hidden)return;
     $('round-title').textContent='Research'+selectedRound.slice(-1)+' · final results';
+    const roundName='Research '+selectedRound.slice(-1);
+    document.title='TradeLock · '+roundName;
+    $('current-round-nav').textContent=roundName;
+    $('round-eyebrow').textContent='POLYMARKET / RESEARCH 0'+selectedRound.slice(-1);
+    $('round-footer').textContent=roundName+' · Adverse-fill handling';
+    $('next-round-label').textContent=roundName;
+    const next=selectedRound==='research4'?['This recorded study is closed. Preserve its reviewed results and frozen R021 replacement bank.','Unsold shares and reward-model uncertainty remain visible; the replay does not establish executable liquidation or policy profitability.','Any later campaign or policy change requires its own stated scope and review.']:data.next_steps;
+    $('next-steps').innerHTML=next.map(t=>'<li>'+escape(t)+'</li>').join('');
+
     $('cohort').textContent='Closed recording · '+s.episodes+' episodes';
-    $('entry-admission').textContent=selectedRound!=='research1'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. The handling rules are unchanged.':'V4-style quotes at the published reward minimum. No market-selection or reward filter.';
+    $('entry-admission').textContent=selectedRound==='research4'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. R021 replaces R015; the other nineteen rules remain unchanged.':selectedRound!=='research1'?'V4-style quotes at a known positive published reward minimum of 50 shares or fewer. The handling rules are unchanged.':'V4-style quotes at the published reward minimum. No market-selection or reward filter.';
+    renderMutations(s.mutations||data.mutations||[]);
     const count=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:2}):'Unknown';
     const paris=t=>new Date(t).toLocaleString('en-GB',{timeZone:'Europe/Paris'});
     const lotHours=n=>finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:3}):'Unknown';
-    const label=id=>names[id]||(id+' · '+((data.mutations||[]).find(m=>m.id===id)?.name||id));
+    const label=id=>names[id]||(id+' · '+((s.mutations||data.mutations||[]).find(m=>m.id===id)?.name||id));
     const base=s.rows.find(r=>r.name==='immediate_exit_v1');
     const v2=s.valuation_version==='v2';
     const sourceCheck=s.source_reference_review;
@@ -183,27 +193,34 @@
       '<div class="score-controls"><label for="final-sort">Order by </label><select id="final-sort"><option value="loss"'+(finalSort==='loss'?' selected':'')+'>Total loss · lowest first</option><option value="hour"'+(finalSort==='hour'?' selected':'')+'>Saved per holding hour · highest first</option><option value="hours"'+(finalSort==='hours'?' selected':'')+'>Holding hours · lowest first</option></select></div>'+
       '<div class="table-scroll"><table><thead><tr><th>Rule</th><th>Loss incl. final inventory</th><th>Saved vs same control</th><th>'+(v2?'Normal closes / estimated exits / UNSOLD':'Normal / assumed closes')+'</th><th>Holding lot-hours</th><th>Saved per holding hour</th><th>Unknown outcomes</th></tr></thead><tbody>'+rows.map(r=>'<tr data-final-rule="'+escape(r.name)+'"><td>'+escape(label(r.name))+(r.name==='R020'?'<br><small>Reward trigger excluded; same effective rule as R010</small>':'')+'</td><td><strong>'+money(r.trading_loss)+'</strong></td><td>'+money(r.saved_vs_control)+'</td><td>'+closeDetails(r)+'</td><td>'+lotHours(r.held_hours)+' h</td><td>'+(r.held_hours===0?'N/A · zero lot-hours':rateMoney(r.savings_per_held_hour))+'</td><td>'+r.unknown_episodes+'<br><small>'+count(r.unpriced_shares)+' unpriced shares</small></td></tr>').join('')+'</tbody></table></div>'+
       '<p class="footnote">The same complete cohort is used for every row. '+(v2?'Book exits use qualified observations at most 30 seconds old and are estimates, not guaranteed fills. The two routes do not add mirrored liquidity. Merge operational costs and latency are unmeasured. Last-trade marks have no fictional executed exit fee; a recent book report does not prove a recent trade.':'Last-positive-bid sales are accounting assumptions: historical quotes may be stale and may lack enough executable size. A later empty or zero-bid update does not erase an earlier positive quote in this convention.')+' Late fills have shorter follow-up to the common recording end; this is not an equal-age six-hour test. Holding hours sum independent fills, include gaps and can exceed the recording duration. Saved per hour is not measured lost rewards, capital efficiency or bot ROI. Unknown fees/prices remain unknown.</p>';
+    if(selectedRound==='research4')$('final-table').innerHTML=$('final-table').innerHTML.replaceAll('Saved vs same control','Marked difference vs same control').replaceAll('Saved per holding hour','Marked difference per holding hour').replaceAll('Saved per hour','Marked difference per hour');
     $('final-sort').onchange=e=>{finalSort=e.target.value;finalBatchReport();};
     $('final-table').insertAdjacentHTML?.('beforeend',sourceNote);
     if(v2)$('final-table').insertAdjacentHTML('beforeend','<p class="footnote">The frozen model uses public HTTP snapshots and observed prints, zero cancel latency, common-control-gated reentry and independent overlapping lots. No shared capital or competing-lot depth constraint is modeled. Fees use recorded schedules; exact per-match fees and rounding are not independently validated.</p>');
     $('round-supplement').hidden=!s.unsold_zero_sensitivity&&!s.advertised_pools;
-    $('round-supplement').open=false;
+    $('round-supplement').open=selectedRound==='research4';
     $('round-extra').innerHTML='';
     if(s.unsold_zero_sensitivity){
       const stress=Object.fromEntries(s.unsold_zero_sensitivity.map(r=>[r.name,r]));
       const rate=r=>r.savings_per_held_hour===null?'N/A · zero lot-hours':rateMoney(r.savings_per_held_hour);
       $('round-extra').innerHTML='<section class="results"><div class="section-title"><h2>Unsold-inventory sensitivity</h2><span>Same common cohort and control</span></div><p>Separate hypothetical scenario: value every UNSOLD share at zero in both the rule and control, retaining simulated cashflows and holding time. Zero is not an observed price, executed sale or full worst-case bound.</p><div class="table-scroll"><table><thead><tr><th>Rule</th><th>UNSOLD shares</th><th>Saved · trade marks</th><th>Saved · zero recovery</th><th>Saved/lot-hour · marks</th><th>Saved/lot-hour · zero</th></tr></thead><tbody>'+rows.map(r=>'<tr data-stress-rule="'+escape(r.name)+'"><td>'+escape(label(r.name))+'</td><td>'+count(r.unsold_shares)+'</td><td>'+money(r.saved_vs_control)+'</td><td>'+money(stress[r.name].saved_vs_control)+'</td><td>'+rate(r)+'</td><td>'+rate(stress[r.name])+'</td></tr>').join('')+'</tbody></table></div></section>';
     }
+    if(selectedRound==='research4')$('round-extra').innerHTML=$('round-extra').innerHTML.replaceAll('Saved ·','Marked difference ·').replaceAll('Saved/lot-hour','Difference/lot-hour');
     if(s.advertised_pools){
       const p=s.advertised_pools;
       $('round-extra').insertAdjacentHTML('beforeend','<section class="results"><div class="section-title"><h2>Advertised reward pools</h2><span>Separate from trading P/L</span></div><p>'+count(p.quoted_markets)+' simulated quoted markets, including '+count(p.quoted_markets_without_any_recorded_simulated_fill)+' without an adverse fill. Known advertised all-farmer pools integrate to <strong>'+money(p.integrated_known_advertised_pool_usd)+'</strong>, equivalent to <strong>'+money(p.known_pool_daily_equivalent_over_entry_window_usd)+'/day</strong> over the entry window.</p><p>'+count(p.known_rate_market_hours)+' known-rate market-hours; '+count(p.unknown_rate_market_hours)+' unknown-rate market-hours. Actual earned rewards and the required share for profit remain unknown. These pools belong to all farmers; do not add them to bot P/L.</p><ul>'+p.limitations.map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul></section>');
     }
 
   }
+  function renderMutations(mutations){
+    $('mutation-heading').textContent=selectedRound==='research4'?'20 mutations · Research 4':'The first 20 mutations';
+    $('mutation-status').textContent=mutations.length+' rules · '+(selectedRound==='research4'?'reviewed frozen bank':data.mutation_checks?.passed?'behavior tests passed':'verification pending');
+    $('mutation-list').innerHTML=mutations.map(r=>'<li class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">'+(r.id==='R020'?'Recovery/deadline only · reward trigger excluded':'Closed recording result available')+'</span></li>').join('');
+  }
   function render(doc,fallback=false){
     if(doc.schema!==1||!Array.isArray(doc.results)||doc.data_kind!=='recorded')throw Error('Unsupported research summary');
     data=doc;$('stage').textContent=doc.state;$('tests').textContent=doc.tests.passed?doc.tests.count+' tests passed':'Needs revalidation';
-    const available=['research1',...['research2','research3'].filter(k=>doc[k]?.status==='reviewed')];
+    const available=['research1',...['research2','research3','research4'].filter(k=>doc[k]?.status==='reviewed')];
     if(selectedRound===null){const requested=new URLSearchParams(location.search).get('round');selectedRound=available.includes(requested)?requested:available.at(-1);finalSort='hour';}
     if(!available.includes(selectedRound))selectedRound='research1';
     for(const option of $('round-select').options)option.disabled=!available.includes(option.value);
@@ -211,9 +228,6 @@
     $('round-select').value=selectedRound;
     $('round-select').onchange=e=>{selectedRound=e.target.value;finalSort='hour';finalBatchReport();};
     $('cohort').textContent=doc.final_batch?.status==='reviewed'?'Closed recording · '+doc.final_batch.episodes+' episodes':'Final results unavailable';
-    const mutations=doc.mutations||[];
-    $('mutation-status').textContent=mutations.length+' rules · '+(doc.mutation_checks?.passed?'behavior tests passed':'verification pending');
-    $('mutation-list').innerHTML=mutations.map(r=>'<li class="mutation"><span class="step">'+escape(r.id)+' / '+escape(r.family.replaceAll('_',' '))+'</span><h3>'+escape(r.name)+'</h3><p>'+escape(r.description)+'</p><span class="mutation-state">'+(doc.final_batch?.status==='reviewed'?(r.id==='R020'?'Recovery/deadline only · reward trigger excluded':'Closed recording result available'):'Awaiting final results')+'</span></li>').join('');
     const stamp=new Date(doc.published_at), age=Date.now()-stamp;
     if(!Number.isFinite(+stamp))throw Error('Missing sync timestamp');
     $('sync-time').textContent=(LOCAL_PREVIEW?'Local preview · not uploaded · ':fallback?'Saved snapshot · ':'Last synced · ')+stamp.toLocaleString()+((age>7*3600000)?' · update overdue':'');

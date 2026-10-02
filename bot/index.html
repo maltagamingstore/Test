@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Tradelock · MM Bot V4</title>
+<title>TradeLock · Bot monitors</title>
 <style>
   :root{
     --bg:#0c141c; --card:#141f2b; --card2:#0f1925; --ink:#dce7f0; --muted:#8098ab;
@@ -72,8 +72,21 @@
   .err{font-family:var(--mono);font-size:12px;color:var(--warn);text-align:center;padding:20px}
 .tablebox{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums} th,td{text-align:right;padding:12px 8px;border-bottom:1px solid var(--line);white-space:nowrap} th:first-child,td:first-child{text-align:left} th{color:var(--muted);font-weight:500} button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer} button[aria-pressed=true]{border-color:var(--accent)} .disclaimer{line-height:1.6;font-size:12px;color:var(--muted)} .section-title{font-size:14px;margin:0 0 14px} .full{grid-column:1/-1} a{color:var(--accent)} @media(max-width:600px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.big{font-size:26px}.net-card{padding:13px 12px}.net-metric{padding:6px 8px}.net-label{font-size:10px}.net-value{font-size:clamp(16px,5.2vw,22px)}}
 </style>
+<style>
+  .pilot-card{margin-bottom:18px}.pilot-header,.pilot-progress,.pilot-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .pilot-header h2{font-size:20px;margin:0}.pilot-header .lbl{margin-bottom:8px}.pilot-progress{margin-top:16px;font-size:14px}
+  .pilot-progress strong{font-size:24px}.pilot-card progress{width:100%;height:12px;margin-top:8px;accent-color:var(--accent)}
+  .pilot-updated{font-size:11px;color:var(--muted);line-height:1.7}.pilot-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+  .pilot-metric{background:var(--card2);border-radius:9px;padding:12px;min-width:0}.pilot-metric dt{font-size:11px;color:var(--muted);line-height:1.4}
+  .pilot-metric dd{margin:8px 0 0;font-size:18px;font-weight:650;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.pilot-metric small{display:block;color:var(--muted);font-size:10px;margin-top:6px;line-height:1.5}
+  .pilot-details summary,.legacy-bot summary{cursor:pointer;font-size:13px;color:var(--accent);padding:10px 0}.pilot-actions .sub{line-height:1.6}.bot-nav{font-size:12px;margin:8px 0 16px;display:flex;gap:14px;flex-wrap:wrap}
+  @media(max-width:650px){.pilot-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.pilot-header h2{font-size:18px}.pilot-actions{align-items:flex-start}.pilot-metric dd{font-size:17px}}
+</style>
 </head>
 <body>
+  <nav class="bot-nav" aria-label="Bot and research pages"><a href="#pilot-monitor">V5 pilot</a><a href="/research1/">Research results ↗</a><a href="#legacy-bot">Previous V4 dashboard</a></nav>
+  <div id="pilot-monitor" aria-live="polite"><section class="card pilot-card"><h2>MM Bot V5 · pilot monitor</h2><p class="disclaimer">Connecting to the read-only pilot feed…</p></section></div>
+  <details id="legacy-bot" class="legacy-bot"><summary>MM Bot V4 · previous dashboard</summary>
   <div class="top">
     <h1>TRADELOCK / MM BOT V4</h1>
     <span id="health" class="badge down"><span class="dot"></span>…</span>
@@ -81,7 +94,9 @@
   <nav aria-label="Research" style="margin:8px 0 14px;font-size:12px"><a href="/research1/" style="color:var(--accent)">Research 1 · Adverse-fill handling ↗</a></nav>
   <div id="fresh" class="fresh">connecting…</div>
   <div id="root"></div>
+  </details>
 
+<script src="pilot-monitor.js"></script>
 <script src="dashboard-v3.js"></script>
 </body>
 </html>

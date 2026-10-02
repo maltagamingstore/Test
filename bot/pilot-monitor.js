@@ -18,6 +18,7 @@
   }
 
   function paperRender(p, now=Date.now()) {
+    if(p.stopped_by_owner===true) return `<section class="card pilot-card" aria-labelledby="paper-title"><div class="pilot-header"><div><div class="lbl">Preserved partial experiment · read-only</div><h2 id="paper-title">MM Bot V5 · paper test stopped</h2></div><span class="pill w" role="status">STOPPED BY OWNER</span></div><p class="disclaimer">Stopped ${escape(clock(p.stopped_at))}. The full paper test is no longer running. Its recording and simulation state are preserved. This interrupted run did not complete the 24-hour farming period or 6½-hour follow-up. No real orders were placed.</p></section>`;
     const money=v=>typeof v==='number'&&Number.isFinite(v)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:4}).format(v):'Unavailable';
     const metric=(name,value,detail='')=>`<div class="pilot-metric"><dt>${escape(name)}</dt><dd>${escape(value)}</dd>${detail?`<small>${escape(detail)}</small>`:''}</div>`;
     const stale=failed||!numeric(p.observed_at)||now-p.observed_at*1000>360000||p.observed_at*1000-now>5000;
